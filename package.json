@@ -1,0 +1,26 @@
+{
+  "name": "@ares/web",
+  "version": "1.0.0",
+  "description": "Web framework module of aReS framework.",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rstefani87info/ares-web.git"
+  },
+  "keywords": [
+    "rest",
+    "webapp",
+    "routing",
+    "http"
+  ],
+  "author": "Roberto Stefani",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rstefani87info/ares-web/issues"
+  },
+  "homepage": "https://github.com/rstefani87info/ares-web#readme"
+}
