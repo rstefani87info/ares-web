@@ -7,24 +7,23 @@ import express from "express";
 import expressSession from "express-session";
 import cors from "cors";
 import { json } from "body-parser";
-import aReS, { crypto, files, localAI } from "@ares/core";
-import app, { isProduction, environments, md5Name } from "../../../app";
-import { initAll } from "./db";
+import aReS from "@ares/core";
+import app, { isProduction, environments, md5Name } from "../../../app.js";
+import { initAll } from "./db.js";
 
-aReS = (() => {
+export default  aReS = ((sessionSecret, cookie , pages) => {
   aReS.server = express();
-  aReS.permissionData = files.getFileContent("../../../app");
+  aReS.app = app;
+  aReS.permissionData = aReS.files.getFileContent("../../../permissionData.json");
   initAll(aReS.server);
   install(aReS.server);
 
   aReS.server.use(
     expressSession({
-      secret: crypto.getMD5Hash("321party2024"),
+      secret: aReS.crypto.getMD5Hash(sessionSecret),
       resave: false,
       saveUninitialized: true,
-      cookie: {
-        maxAge: 24 * 60 * 60 * 1000,
-      },
+      cookie: cookie
     })
   );
 
@@ -54,9 +53,9 @@ aReS = (() => {
     }
   });
 
-  // aReS.server.get('/', (req, res) => {
-  //   res.json(app);
-  // });
+  aReS.server.get('/', (req, res) => {
+    pages.home??pages.index??pages.default;
+  });
 
   aReS.server.use(json());
   aReS.server.use(cors());
@@ -66,5 +65,3 @@ aReS = (() => {
   });
   return aReS;
 })();
-
-export default aReS;
