@@ -1,14 +1,32 @@
-const permissions = require('../permissions');
 const mysql = require('mysql');
 const filesUtility = require('./files');
 const httpUtility = require('./http');
-const app = require('../app');
+const app = require('../../../app');
+const permissions = require('../../../permissions');
+const { format } = require('@ares/core/data-descriptors');
 
 
 const dbMap = {};
 
 const mapRequestOrResult = (r) => r;
 
+/**
+ * @param {Object} express - The express framework object
+ * @param {string} dbName - The name of the database
+ * @param {boolean} [force=false] - Whether to force the export
+ * @return {Object} The exported database
+ * 
+ * @desc {en} Export a database as a REST API
+ * @desc {it} Esporta una database come REST API
+ * @desc {es} Exportar una base de datos como API REST
+ * @desc {pt} Exportar uma base de dados como API REST
+ * @desc {fr} Exporter une base de données comme API REST
+ * @desc {de} Datenbank exportieren als REST API
+ * @desc {ja} データベースを REST API としてエクスポート
+ * @desc {zh} 导出数据库
+ * @desc {ru} Экспорт базы данных как API REST
+ * 
+ */
 function exportDBAsREST(express, dbName, force = false) {
 
 	dbName = dbName.toLowerCase();
@@ -36,7 +54,7 @@ function exportDBAsREST(express, dbName, force = false) {
 			return dbMap[dbName].sessions[req.sessionId];
 		};
 		dbMap[dbName].close = function(req) { dbMap[dbName].sessions[req.sessionId].connection.end(); };
-		const files = filesUtility.getFilesRecoursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
+		const files = filesUtility.getFilesRecursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
 		for (const file of files) {
 			if (filesUtility.isFile(file)) {
 				const fileName = filesUtility.getFileName(file);
@@ -74,9 +92,7 @@ function exportDBAsREST(express, dbName, force = false) {
 								(req, res) => {
 									if (permissions.isResourceAllowed(dbName, req.hostname.toLowerCase(), req.params['@clientUserId'], req.get('user-agent'), method)) {
 										if(mapper.params ){
-											for (const key in mapper.params) {
-												 
-											}
+											format(req.params,mapper.params);
 										}
 										exportDBAsREST(express, dbName)[fileName].execute(req, res, mapper,(data) => { res.json(data); });
 									}

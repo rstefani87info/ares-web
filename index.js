@@ -6,10 +6,13 @@ import express from 'express';
 import expressSession from 'express-session';
 import { json } from 'body-parser';
 const server = express();
+import aReS from '@ares/core';
 import { getMD5Hash } from '@ares/core/crypto';
-import { initPrototypes } from '@ares/core/prototype';
-initPrototypes();
+
+import { fileUtils } from '@ares/core/files';
+
 import app, { isProduction, environments, md5Name } from '../../../app';
+const permissionData = fileUtils.getFileContent('../../../app') ;
 
 import { initAll } from './db';
 initAll(server);
