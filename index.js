@@ -4,15 +4,13 @@
  */
 import express from 'express';
 import expressSession from 'express-session';
+import cors from 'cors';
 import { json } from 'body-parser';
 const server = express();
-import aReS from '@ares/core';
-import { getMD5Hash } from '@ares/core/crypto';
-
-import { fileUtils } from '@ares/core/files';
+import aReS, { crypto ,  files} from '@ares/core';
 
 import app, { isProduction, environments, md5Name } from '../../../app';
-const permissionData = fileUtils.getFileContent('../../../app') ;
+const permissionData = files.getFileContent('../../../app') ;
 
 import { initAll } from './db';
 initAll(server);
@@ -21,7 +19,7 @@ import { install } from '@ares/core/localAI';
 install(server);
 
 server.use(expressSession({
-	secret: getMD5Hash('321party2024'),
+	secret: crypto.getMD5Hash('321party2024'),
 	resave: false,
 	saveUninitialized: true,
 }));
@@ -43,9 +41,9 @@ server.use((req, res, next) => {
 	}
 });
 
-server.get('/', (req, res) => {
-  res.json(app);
-});
+// server.get('/', (req, res) => {
+//   res.json(app);
+// });
 
 server.use(json());
 server.use(cors());

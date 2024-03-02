@@ -26,6 +26,7 @@
   "homepage": "https://github.com/rstefani87info/ares-web#readme",
   "dependencies": {
     "@ares/core": "github:rstefani87info/ares-core#master",
+    "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-session": "^1.18.0"
   }
