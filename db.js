@@ -1,5 +1,5 @@
 import mysql  from 'mysql';
-import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from './files.js';
+import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from '@ares/core/files.js';
 
 import httpUtility from './http';
 import app from '../../../app';
