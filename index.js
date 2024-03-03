@@ -8,7 +8,7 @@ import expressSession from "express-session";
 import cors from "cors";
 import { json } from "body-parser";
 import aReS from "@ares/core";
-import app, { isProduction} from "../../../app.js";
+import app, { isProduction} from "./app.js";
 import { initAll } from "./db.js";
 
 export default  aReS = ((sessionSecret, cookie , pages) => {
