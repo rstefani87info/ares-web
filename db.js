@@ -1,10 +1,10 @@
 import mysql  from 'mysql';
 import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from '@ares/core/files.js';
-
+import permissions from '@ares/core/permissions.js';
+import { format } from '@ares/core/data-descriptors.js';
 import httpUtility from './http.js';
 import app from '../../../app.js';
-import permissions from '../../../permissions.js';
-import { format } from '@ares/core/data-descriptors.js';
+
 
 export const dbMap = {};
 
@@ -114,7 +114,7 @@ export function initAll(express) {
 	const files = getFilesRecursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
 	for (const file of files) {
 		console.log('connection file found: "' + file + ';');
-		const db = require(file.replace(/\.[jt]s[x]{0,1}/i, ''));
+		const db = import (file.replace(/\.[jt]s[x]{0,1}/i, ''));
 		exportDBAsREST(express, db.name, true);
 	}
 }
