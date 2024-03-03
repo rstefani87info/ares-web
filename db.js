@@ -27,7 +27,7 @@ const mapRequestOrResult = (r) => r;
  * @desc {ru} Экспорт базы данных как API REST
  * 
  */
-function exportDBAsREST(express, dbName, force = false) {
+export function exportDBAsREST(express, dbName, force = false) {
 
 	dbName = dbName.toLowerCase();
 	force = force || (!dbName in dbMap);
@@ -109,7 +109,7 @@ function exportDBAsREST(express, dbName, force = false) {
 	return dbMap[dbName];
 }
 
-function initAll(express) {
+export function initAll(express) {
 	const dbRoot = app.dbRoot;
 	const files = getFilesRecursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
 	for (const file of files) {
