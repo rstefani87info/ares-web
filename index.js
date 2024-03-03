@@ -6,7 +6,9 @@
 import express from "express";
 import expressSession from "express-session";
 import cors from "cors";
-import { json } from "body-parser";
+import * as bodyParser from 'body-parser';
+const { json } = bodyParser;
+
 import aReS from "@ares/core";
 import app, { isProduction} from "./app.js";
 import { initAll } from "./db.js";
