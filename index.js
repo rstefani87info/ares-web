@@ -17,8 +17,7 @@ export default  aReS = ((sessionSecret, cookie , pages) => {
   aReS.server = express();
   aReS.app = app;
   aReS.permissionData = aReS.files.getFileContent("../../../permissionData.json");
-  initAll(aReS.server);
-  install(aReS.server);
+  initAll(aReS.app.dbRoot);
 
   aReS.server.use(
     expressSession({
