@@ -1,12 +1,12 @@
-const mysql = require('mysql');
-const filesUtility = require('./files');
-const httpUtility = require('./http');
-const app = require('../../../app');
-const permissions = require('../../../permissions');
-const { format } = require('@ares/core/data-descriptors');
+import mysql  from 'mysql';
+import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from './files.js';
 
+import httpUtility from './http';
+import app from '../../../app';
+import permissions from '../../../permissions';
+import { format } from '@ares/core/data-descriptors';
 
-const dbMap = {};
+export const dbMap = {};
 
 const mapRequestOrResult = (r) => r;
 
@@ -54,19 +54,19 @@ function exportDBAsREST(express, dbName, force = false) {
 			return dbMap[dbName].sessions[req.sessionId];
 		};
 		dbMap[dbName].close = function(req) { dbMap[dbName].sessions[req.sessionId].connection.end(); };
-		const files = filesUtility.getFilesRecursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
+		const files = getFilesRecursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
 		for (const file of files) {
-			if (filesUtility.isFile(file)) {
-				const fileName = filesUtility.getFileName(file);
-				const path = filesUtility.getRelativePathFrom(filesUtility.getParent(file), filesUtility.getParent(dbRoot)).replaceAll('\\', '/').replaceAll('{',':').replaceAll('}','');
-				const mapperFile = filesUtility.getParent(file) + '/requestMapper';
+			if (isFile(file)) {
+				const fileName =  getFileName(file);
+				const path = getRelativePathFrom(getParent(file), getParent(dbRoot)).replaceAll('\\', '/').replaceAll('{',':').replaceAll('}','');
+				const mapperFile = getParent(file) + '/requestMapper';
 
 				const mapperFileExt = mapperFile + '.js';
 
 				dbMap[dbName][fileName] = {
 					path: path,
-					mapper: filesUtility.fileExists(mapperFileExt) ? require(mapperFile) : [{ methods: '.*', mapRequest: mapRequestOrResult, mapResult: mapRequestOrResult }],
-					query: filesUtility.getFileContent(file),
+					mapper: fileExists(mapperFileExt) ? require(mapperFile) : [{ methods: '.*', mapRequest: mapRequestOrResult, mapResult: mapRequestOrResult }],
+					query: getFileContent(file),
 					requestVariables: httpUtility.getRequestVariables(path),
 				};
 
@@ -111,7 +111,7 @@ function exportDBAsREST(express, dbName, force = false) {
 
 function initAll(express) {
 	const dbRoot = app.dbRoot;
-	const files = filesUtility.getFilesRecoursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
+	const files = getFilesRecursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
 	for (const file of files) {
 		console.log('connection file found: "' + file + ';');
 		const db = require(file.replace(/\.[jt]s[x]{0,1}/i, ''));
@@ -120,4 +120,5 @@ function initAll(express) {
 }
 
 
-module.exports = { dbMap: dbMap, exportDBAsREST: exportDBAsREST, initAll: initAll };
+const db = { dbMap: dbMap, exportDBAsREST: exportDBAsREST, initAll: initAll };
+export default db;
