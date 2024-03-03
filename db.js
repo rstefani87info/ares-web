@@ -1,10 +1,10 @@
 import mysql  from 'mysql';
 import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from '@ares/core/files.js';
 
-import httpUtility from './http';
-import app from '../../../app';
-import permissions from '../../../permissions';
-import { format } from '@ares/core/data-descriptors';
+import httpUtility from './http.js';
+import app from '../../../app.js';
+import permissions from '../../../permissions.js';
+import { format } from '@ares/core/data-descriptors.js';
 
 export const dbMap = {};
 
