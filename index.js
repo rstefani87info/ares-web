@@ -8,7 +8,7 @@ import expressSession from "express-session";
 import cors from "cors";
 import { json } from "body-parser";
 import aReS from "@ares/core";
-import app, { isProduction, environments, md5Name } from "../../../app.js";
+import app, { isProduction} from "../../../app.js";
 import { initAll } from "./db.js";
 
 export default  aReS = ((sessionSecret, cookie , pages) => {
@@ -29,13 +29,13 @@ export default  aReS = ((sessionSecret, cookie , pages) => {
 
   aReS.server.use((req, res, next) => {
     isProduction =
-      environments.filter(
+      app.environments.filter(
         (x) =>
           x.domain.toLowerCase() == req.hostname.toLowerCase() &&
           x.type.toLowerCase() == "production"
       ).length >= 0;
     console.log("app.isProduction=" + isProduction);
-    if (req.cookies && req.cookies[md5Name()]) {
+    if (req.cookies && req.cookies[app.md5Name()]) {
       req.session.regenerate((err) => {
         if (!err) {
           req.session.openingTime = moment().toDate();
