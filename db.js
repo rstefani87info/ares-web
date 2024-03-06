@@ -2,6 +2,7 @@ import mysql  from 'mysql';
 import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom,fileExists,getFileContent }  from '@ares/core/files.js';
 import permissions from '@ares/core/permissions.js';
 import { format } from '@ares/core/dataDescriptors.js';
+import { importModule } from '@ares/core/index.js';
 import httpUtility from './http.js';
 import app from '../../../app.js';
 
@@ -69,7 +70,7 @@ export function exportDBAsREST(express, dbName, force = false) {
 					query: getFileContent(file),
 					requestVariables: httpUtility.getRequestVariables(path),
 				};
-				console.log('...............'+JSON.stringify(import(mapperFileExt)));
+				console.log('...............'+JSON.stringify( importModule(mapperFileExt)));
 
 				dbMap[dbName][fileName].execute = function(request, response,mapper, callback) {
 					if (!mapper.mapRequest) mapper.mapRequest = mapRequestOrResult;
