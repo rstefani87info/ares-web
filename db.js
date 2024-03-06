@@ -1,5 +1,5 @@
 import mysql  from 'mysql';
-import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom }  from '@ares/core/files.js';
+import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom,fileExists,getFileContent }  from '@ares/core/files.js';
 import permissions from '@ares/core/permissions.js';
 import { format } from '@ares/core/dataDescriptors.js';
 import httpUtility from './http.js';
@@ -57,19 +57,19 @@ export function exportDBAsREST(express, dbName, force = false) {
 		const files = getFilesRecursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
 		for (const file of files) {
 			if (isFile(file)) {
-				const fileName =  getFileName(file);
-				const path = getRelativePathFrom(getParent(file), getParent(dbRoot)).replaceAll('\\', '/').replaceAll('{',':').replaceAll('}','');
+				const fileName =  getFileName(file).replace('.sql','');
+				const path =  getParent(file).replaceAll('{',':').replaceAll('}','');
 				const mapperFile = getParent(file) + '/requestMapper';
 
 				const mapperFileExt = mapperFile + '.js';
 
 				dbMap[dbName][fileName] = {
 					path: path,
-					mapper: fileExists(mapperFileExt) ? require(mapperFile) : [{ methods: '.*', mapRequest: mapRequestOrResult, mapResult: mapRequestOrResult }],
+					mapper: fileExists(mapperFileExt) ? import(mapperFileExt).mapper : [{ methods: '.*', mapRequest: mapRequestOrResult, mapResult: mapRequestOrResult }],
 					query: getFileContent(file),
 					requestVariables: httpUtility.getRequestVariables(path),
 				};
-
+				console.log('...............'+JSON.stringify(import(mapperFileExt)));
 
 				dbMap[dbName][fileName].execute = function(request, response,mapper, callback) {
 					if (!mapper.mapRequest) mapper.mapRequest = mapRequestOrResult;
@@ -110,12 +110,12 @@ export function exportDBAsREST(express, dbName, force = false) {
 }
 
 export function initAll(express) {
-	const dbRoot = app.dbRoot;
+	const dbRoot =  app.dbRoot ;
 	const files = getFilesRecursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
 	for (const file of files) {
 		console.log('connection file found: "' + file + ';');
-		const db = require(file.replace(/\.[jt]s[x]{0,1}/i, ''));
-		exportDBAsREST(express, db.name, true);
+		const db = import(file);
+		exportDBAsREST(express, getFileName(getParent(file)), true);
 	}
 }
 

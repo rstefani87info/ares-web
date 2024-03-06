@@ -1,4 +1,4 @@
-const filesUtility = require('./files');
+import * as filesUtility  from '@ares/core/files.js';
 /**
  * @prototype {string} 
  */

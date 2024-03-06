@@ -25,6 +25,4 @@ export function isProduction(url) {
     )[0] ?? false
   );
 }
-
-app.root=getApplicationRoot();
 export default app;
