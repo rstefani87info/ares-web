@@ -1,125 +1,85 @@
-import mysql  from 'mysql';
-import { isFile,getFilesRecursively,getParent,getFileName,getRelativePathFrom,fileExists,getFileContent }  from '@ares/core/files.js';
+/**
+ * @author Roberto Stefani
+ * @license MIT
+ */
 import permissions from '@ares/core/permissions.js';
-import { format } from '@ares/core/dataDescriptors.js';
-import { importModule } from '@ares/core/index.js';
+import dbCore from '@ares/core/db.js';
+import { asyncConsole } from '@ares/core/console.js';
 import httpUtility from './http.js';
-import app from '../../../app.js';
-
-
+import { uxFilePathRegex } from '@ares/core/regex.js';
 export const dbMap = {};
 
-const mapRequestOrResult = (r) => r;
-
 /**
- * @param {Object} express - The express framework object
- * @param {string} dbName - The name of the database
- * @param {boolean} [force=false] - Whether to force the export
+ * @param {Object} mapper - The request mapper object
+ * @param {Object} aReS - The aReS context
+ * @param {Object} db - The database definition
  * @return {Object} The exported database
  * 
- * @desc {en} Export a database as a REST API
- * @desc {it} Esporta una database come REST API
- * @desc {es} Exportar una base de datos como API REST
- * @desc {pt} Exportar uma base de dados como API REST
- * @desc {fr} Exporter une base de données comme API REST
- * @desc {de} Datenbank exportieren als REST API
- * @desc {ja} データベースを REST API としてエクスポート
- * @desc {zh} 导出数据库
- * @desc {ru} Экспорт базы данных как API REST
+ * @desc {en} Export a database as a REST API by mapper definition
+ * @desc {it} Esporta una database come REST API tramite la definizione del mappatore
+ * @desc {es} Exportar una base de datos como API REST por la definición de mapeador
+ * @desc {pt} Exportar uma base de dados como API REST por definição do mapeador
+ * @desc {fr} Exporter une base de données comme API REST par la définition du mappeur
+ * @desc {de} Datenbank exportieren als REST API durch Definition der Mapper
+ * @desc {ru} Экспортирует базу данных как API REST по определению маппера
+ * @desc {zh} 将数据库导出为 REST API 通过映射定义
+ * @desc {ja} データベースを REST API にエクスポートするマップデータを定義する
  * 
  */
-export function exportDBAsREST(express, dbName, force = false) {
-
-	dbName = dbName.toLowerCase();
-	force = force || (!dbName in dbMap);
-	if (force) {
-		console.log('init db "' + dbName + '" {');
-		const dbRoot = app.dbRoot + '/' + dbName;
-		dbMap[dbName] = dbMap[dbName] ?? { sessions: {} };
-		dbMap[dbName].dbRoot = dbRoot;
-		dbMap[dbName].getConnection = function(req, force = false) {
-			if (force || !dbMap[dbName].sessions[req.sessionId]) {
-				dbMap[dbName].sessions[req.sessionId] = mysql.createConnection(require(dbRoot + '/connection')[app.isProduction ? 'production' : 'test']);
-				dbMap[dbName].sessions[req.sessionId].connect((err) => {
-					if (err) {
-						delete dbMap[dbName].sessions[req.sessionId];
-						throw err;
-					}
-					console.log(' Connected to database "' + dbName + '"!');
-					dbMap[dbName].sessions[req.sessionId].on('end', () => {
-						delete dbMap[dbName];
-						console.log('Closed connection: ' + sessionId + ' ' + dbName);
-					});
-				});
-			}
-			return dbMap[dbName].sessions[req.sessionId];
-		};
-		dbMap[dbName].close = function(req) { dbMap[dbName].sessions[req.sessionId].connection.end(); };
-		const files = getFilesRecursively(dbMap[dbName].dbRoot, /.*\.sql$/i, true);
-		for (const file of files) {
-			if (isFile(file)) {
-				const fileName =  getFileName(file).replace('.sql','');
-				const path =  getParent(file).replaceAll('{',':').replaceAll('}','');
-				const mapperFile = getParent(file) + '/requestMapper';
-
-				const mapperFileExt = mapperFile + '.js';
-
-				dbMap[dbName][fileName] = {
-					path: path,
-					mapper: fileExists(mapperFileExt) ? import(mapperFileExt).mapper : [{ methods: '.*', mapRequest: mapRequestOrResult, mapResult: mapRequestOrResult }],
-					query: getFileContent(file),
-					requestVariables: httpUtility.getRequestVariables(path),
-				};
-				console.log('...............'+JSON.stringify( importModule(mapperFileExt)));
-
-				dbMap[dbName][fileName].execute = function(request, response,mapper, callback) {
-					if (!mapper.mapRequest) mapper.mapRequest = mapRequestOrResult;
-					if (!mapper.mapResult) mapper.mapResult = mapRequestOrResult;
-					if (!mapper.methods) mapper.methods = '.*';
-					console.log(request.params);
-					dbMap[dbName].getConnection(request).query(dbMap[dbName][fileName].query, mapper.mapRequest(request.params,request), (error, results, fields) => {
-						if (error) { httpUtility.sendError403(request, response, error); throw error; }
-						if (callback) callback(Array.isArray(results)?results.map((row,index) => mapper.mapResult(row,index)):mapper.mapResult(results) );
-					});
-				};
-
-				for (const mapper of dbMap[dbName][fileName].mapper) {
-					for (let method in httpUtility.httpMethods) {
-						method = method.toUpperCase();
-						const methods = new RegExp(mapper.methods, 'i');
-						if (method.match(methods)) {
-							console.log(' - init query "' + dbName + '.' + fileName + '[' + method + '] -> ' + dbMap[dbName][fileName].path + ';');
-							express[httpUtility.httpMethods[method].expressMethod]('/' + dbMap[dbName][fileName].path,
-								(req, res) => {
-									if (permissions.isResourceAllowed(dbName, req.hostname.toLowerCase(), req.params['@clientUserId'], req.get('user-agent'), method)) {
-										if(mapper.params ){
-											format(req.params,mapper.params);
-										}
-										exportDBAsREST(express, dbName)[fileName].execute(req, res, mapper,(data) => { res.json(data); });
-									}
-
-								}
+export function exportDBQueryAsRESTService(aReS, querySetting, db) {
+	asyncConsole.log('db', 'exportDBQueryAsRESTService: {\n\t\t' + db.name + ' ' + querySetting.name);
+	if (!querySetting.mappers) return null;
+	for (const mapper of querySetting.mappers) {
+		const filter = (mapper.path?.match(uxFilePathRegex) || null);
+		asyncConsole.log('db', '\t\tfilter: ' + mapper.path + ' ' + filter);
+		if (filter) {
+			asyncConsole.log('db', '\t\tpath: {' + (mapper.name || mapperCase));
+			mapper.requestVariables = httpUtility.getRequestVariables(mapper.path);
+			for (let method in httpUtility.httpMethods) {
+				method = method.toUpperCase();
+				const methods = new RegExp(mapper.methods, 'i');
+				if (method.match(methods)) {
+					asyncConsole.log('db', ' - init query "' + db.name + '.' + querySetting.name + '.' + mapper.name + '[' + method + '] -> ' + mapper.path + ';');
+					aReS.server[httpUtility.httpMethods[method].expressMethod](mapper.path,
+						(req, res) => {
+							db[querySetting.name][mapper.name].execute(
+								req,
+								(queryResponse) => {
+									if (queryResponse.error)
+										httpUtility.sendError403(req, res, queryResponse.error);
+									else res.json(queryResponse);
+								},
 							);
 						}
-					}
+					);
 				}
 			}
 		}
-		console.log('}');
 	}
-	return dbMap[dbName];
+	console.log('}\n');
 }
 
-export function initAll(express) {
-	const dbRoot =  app.dbRoot ;
-	const files = getFilesRecursively(dbRoot, /(.*[\/\\]){0,1}connection\.js/i, true);
-	for (const file of files) {
-		console.log('connection file found: "' + file + ';');
-		const db = import(file);
-		exportDBAsREST(express, getFileName(getParent(file)), true);
-	}
+/**
+ * @param {Object} aReS - The aReS context
+ * @param {Object} dbList - The database list
+ * @return {array} The exported database
+ * 
+ * @desc {en} Inject all routes for DB REST API
+ * @desc {it} Inserisce tutte le rotte per l'API REST
+ * @desc {es} Inyectar todas las rutas para la API REST
+ * @desc {pt} Injetar todas as rotas para a API REST 
+ * @desc {fr} Insérer toutes les routes pour l'API REST 
+ * @desc {de} Alle Routen für die REST API einbetten 
+ * @desc {ru} Внедите все маршруты для REST API 
+ * @desc {zh} 注入所有数据库 REST API 的路由 
+ * @desc {ja} DB REST API のルーティングをすべてインジェクト 
+ * 
+ */
+export function loadAllDBRoutes(aReS, dbList) {
+	aReS.server.use('/db', router);
 }
 
 
-const db = { dbMap: dbMap, exportDBAsREST: exportDBAsREST, initAll: initAll };
-export default db;
+dbCore.exportDBQueryAsRESTService = exportDBQueryAsRESTService;
+dbCore.loadAllDBRoutes = loadAllDBRoutes;
+export default dbCore;

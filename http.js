@@ -1,4 +1,4 @@
-import * as filesUtility  from '@ares/core/files.js';
+import * as filesUtility from '@ares/core/files.js';
 /**
  * @prototype {string} 
  */
@@ -32,7 +32,7 @@ export function getDomainInfo(this_string, callback) {
 	const whois = require('whois');
 	whois.lookup(this_string, (err, data) => {
 		if (err) {
-			throw(err);
+			throw (err);
 		}
 		const jsonData = parseWhoisData(data);
 		callback(jsonData);
@@ -68,7 +68,7 @@ export const httpMethods = {
 };
 
 export function sendError(req, res, statusCode, message, error) {
-	res.status(statusCode).json({ message: message, error: error });
+	res.status(statusCode).json({ message: message, error: error instanceof Error ? error.message+'\n'+error.stack : error });
 }
 export function sendError100(req, res, error) { sendError(req, res, 100, 'Continue', error); }
 export function sendError200(req, res, error) { sendError(req, res, 200, 'OK', error); }
@@ -85,28 +85,58 @@ export function sendError500(req, res, error) { sendError(req, res, 500, 'Intern
 export function sendError502(req, res, error) { sendError(req, res, 502, 'Bad Gateway', error); }
 export function sendError503(req, res, error) { sendError(req, res, 503, 'Service Unavailable', error); }
 
-
-const http = {
-	sendError100:sendError100,
-	sendError200:sendError200,
-	sendError201:sendError201,
-	sendError204:sendError204,
-	sendError301:sendError301,
-	sendError302:sendError302,
-	sendError304:sendError304,
-	sendError400:sendError400,
-	sendError401:sendError401,
-	sendError403:sendError403,
-	sendError404:sendError404,
-	sendError500:sendError500,
-	sendError502:sendError502,
-	sendError503:sendError503,
-	sendError:sendError,httpMethods:httpMethods,
-	getRequestVariables:getRequestVariables,
-	getRequest:getRequest,
-	getDomainInfo:getDomainInfo,
-	getDomainName:getDomainName
-	
+export function getAllParamsByMethod(req) {
+	let ret;
+	if (req.method === 'GET' || req.method === 'DELETE') {
+		ret = req.query;
+	} else {
+		if (typeof req.body === 'string') {
+			const queryString = req.body;
+			const params = {};
+			const pairs = queryString.split('&');
+			for (const pair of pairs) {
+				const [key, value] = pair.split('=');
+				params[key] = value;
+			}
+			ret = params;
+		} else if (typeof req.body === 'object') {
+			ret = req.body;
+		}
 	}
-;
+	return {...ret, ...req.params};
+}
+export function getAllParams(req) {
+	req = { ...req };
+	req.method = 'GET';
+	const get = getAllParamsByMethod(req);
+	req.method = 'POST';
+	const post = getAllParamsByMethod(req);
+	return { ...get, ...post, ...req.params };
+}
+const http = {
+	sendError100: sendError100,
+	sendError200: sendError200,
+	sendError201: sendError201,
+	sendError204: sendError204,
+	sendError301: sendError301,
+	sendError302: sendError302,
+	sendError304: sendError304,
+	sendError400: sendError400,
+	sendError401: sendError401,
+	sendError403: sendError403,
+	sendError404: sendError404,
+	sendError500: sendError500,
+	sendError502: sendError502,
+	sendError503: sendError503,
+	sendError: sendError, httpMethods: httpMethods,
+	getRequestVariables: getRequestVariables,
+	getRequest: getRequest,
+	getDomainInfo: getDomainInfo,
+	getDomainName: getDomainName,
+	getAllParamsByMethod: getAllParamsByMethod,
+	getAllParams: getAllParams,
+
+
+}
+	;
 export default http;
