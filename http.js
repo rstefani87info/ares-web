@@ -86,9 +86,9 @@ export function sendError502(req, res, error) { sendError(req, res, 502, 'Bad Ga
 export function sendError503(req, res, error) { sendError(req, res, 503, 'Service Unavailable', error); }
 
 export function getAllParamsByMethod(req) {
-	let ret;
+	let ret=req.params??{};
 	if (req.method === 'GET' || req.method === 'DELETE') {
-		ret = req.query;
+		ret = Object.assign({}, ret, req.query??{}); 
 	} else {
 		if (typeof req.body === 'string') {
 			const queryString = req.body;

@@ -27,36 +27,24 @@ export const dbMap = {};
  * 
  */
 export function exportDBQueryAsRESTService(aReS, querySetting, db) {
-	asyncConsole.log('db', 'exportDBQueryAsRESTService: {\n\t\t' + db.name + ' ' + querySetting.name);
+	asyncConsole.log('db', ' - exportDBQueryAsRESTService: { ' );
+	asyncConsole.log('db',  ' - - function: ' + db.name + '.' + querySetting.name);
 	if (!querySetting.mappers) return null;
 	for (const mapper of querySetting.mappers) {
-		const filter = (mapper.path?.match(uxFilePathRegex) || null);
-		asyncConsole.log('db', '\t\tfilter: ' + mapper.path + ' ' + filter);
-		if (filter) {
-			asyncConsole.log('db', '\t\tpath: {' + (mapper.name || mapperCase));
-			mapper.requestVariables = httpUtility.getRequestVariables(mapper.path);
-			for (let method in httpUtility.httpMethods) {
-				method = method.toUpperCase();
-				const methods = new RegExp(mapper.methods, 'i');
-				if (method.match(methods)) {
-					asyncConsole.log('db', ' - init query "' + db.name + '.' + querySetting.name + '.' + mapper.name + '[' + method + '] -> ' + mapper.path + ';');
-					aReS.server[httpUtility.httpMethods[method].expressMethod](mapper.path,
-						(req, res) => {
-							db[querySetting.name][mapper.name].execute(
-								req,
-								(queryResponse) => {
-									if (queryResponse.error)
-										httpUtility.sendError403(req, res, queryResponse.error);
-									else res.json(queryResponse);
-								},
-							);
-						}
-					);
-				}
-			}
-		}
+		asyncConsole.log('db', ' - - REST: {' + (mapper.name || mapperCase) + ':  ' +mapper.path);
+		aReS.exportRoute(db.name + '.' + querySetting.name + '.' + mapper.name, mapper, (req, res) => {
+			db[querySetting.name][mapper.name].execute(
+				req,
+				(queryResponse) => {
+					if (queryResponse.error)
+						httpUtility.sendError403(req, res, queryResponse.error);
+					else res.json(queryResponse);
+				},
+			);
+		})
+		asyncConsole.log('db',' - - }');
 	}
-	console.log('}\n');
+	asyncConsole.log('db',' - }');
 }
 
 /**

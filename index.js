@@ -10,6 +10,7 @@ import * as permissions from "./permissions.js";
 import appSetup from '../../../app.js';
 import httpUtility from './http.js';
 import db from "./db.js";
+import { cloneWithMethods } from "@ares/core/objects.js";
 
 /**
  * 
@@ -58,12 +59,31 @@ async function aReSWebInit (port=3000) {
   aReS.server = express();
   aReS.server.use(express.json());
   aReS.server.use(cors());
+
+  aReS.exportRoute = ( id, mapper, callback)=>{
+      if (mapper.path) {
+        for (let method in httpUtility.httpMethods) {
+          method = method.toUpperCase();
+          const methods = new RegExp(mapper.methods, 'i');
+          if (method.match(methods)) {
+            aReS.server[httpUtility.httpMethods[method].expressMethod](mapper.path,
+              (req, res) => {
+                req.parameters=httpUtility.getAllParamsByMethod(req);
+                if (aReS.permissions.isResourceAllowed(id, req )) {
+                  callback(req, res);
+                }
+              }
+            );
+          }
+          
+        }
+      }
+    };
   
   aReS.server.use((req, res, next) => {
     console.log(`Request URL: ${req.url}`);
     console.log(`Request Method: ${req.method}`);
-    req.parameters=httpUtility.getAllParamsByMethod(req);
-    if (aReS.permissions.isResourceAllowed(req.url, req )) {
+   
       aReS.isProduction = isProduction(req.headers.host.split(':')[0].toLowerCase()) ;
       if (req.cookies && req.cookies[app.md5Name()]) {
         req.session.regenerate((err) => {
@@ -81,7 +101,6 @@ async function aReSWebInit (port=3000) {
       } else {
         next();
       }
-    }
     
   });
 
