@@ -9,7 +9,8 @@ import aReS from "@ares/core";
 import * as permissions from "./permissions.js";
 import appSetup from '../../../app.js';
 import httpUtility from './http.js';
-import db from "./db.js";
+import jwt from './jwt.js';
+import datasources from "@ares/web/datasources.js";
 import { cloneWithMethods } from "@ares/core/objects.js";
 
 /**
@@ -59,51 +60,35 @@ async function aReSWebInit (port=3000) {
   aReS.server = express();
   aReS.server.use(express.json());
   aReS.server.use(cors());
+  aReS.jwtSensibleRoots = [];
+  
 
   aReS.exportRoute = ( id, mapper, callback)=>{
-      if (mapper.path) {
-        for (let method in httpUtility.httpMethods) {
-          method = method.toUpperCase();
-          const methods = new RegExp(mapper.methods, 'i');
-          if (method.match(methods)) {
-            aReS.server[httpUtility.httpMethods[method].expressMethod](mapper.path,
-              (req, res) => {
-                req.parameters=httpUtility.getAllParamsByMethod(req);
-                if (aReS.permissions.isResourceAllowed(id, req )) {
-                  callback(req, res);
-                }
+    if (mapper.path) {
+      if(mapper.isJWTSensible){
+        aReS.jwtSensibleRoots.push(mapper);
+      }
+      for (let method in httpUtility.httpMethods) {
+        method = method.toUpperCase();
+        const methods = new RegExp(mapper.methods, 'i');
+        if (method.match(methods)) {
+          aReS.server[httpUtility.httpMethods[method].expressMethod](mapper.path,
+            (req, res) => {
+              if(mapper.isJWTSensible &&aReS.jwtSensibleRoots.some(m=> m.path === req.url && req.method.match(new RegExp(m.methods, 'i')))){
+                jwt.validateJWT(aReS,req, res);
               }
-            );
-          }
-          
+              req.parameters = httpUtility.getAllParamsByMethod(req);
+              if (aReS.permissions.isResourceAllowed(id, req )) {
+                callback(req, res);
+              }
+            }
+          );
         }
+        
       }
-    };
+    }
+  };
   
-  aReS.server.use((req, res, next) => {
-    console.log(`Request URL: ${req.url}`);
-    console.log(`Request Method: ${req.method}`);
-   
-      aReS.isProduction = isProduction(req.headers.host.split(':')[0].toLowerCase()) ;
-      if (req.cookies && req.cookies[app.md5Name()]) {
-        req.session.regenerate((err) => {
-          if (!err) {
-            req.session.openingTime = moment().toDate();
-            req.session.id = getMD5Hash(
-              req.get("user-agent") +
-                " " +
-                req.parameters["@clientUserId"] +
-                moment(req.session.openingTime).format("YYYYMMDDHHmmss")
-            );
-          }
-          next();
-        });
-      } else {
-        next();
-      }
-    
-  });
-
   aReS.server.use(
     expressSession({
       secret: aReS.crypto.getMD5Hash(aReS.appSetup.name),
@@ -113,15 +98,13 @@ async function aReSWebInit (port=3000) {
     })
   );
 
-   
-
   aReS.server.get('/', (req, res) => {
     if(aReS.pages?.index) res.redirect(aReS.pages.index);
     else res.json({application: appSetup.name, env: appSetup.environment, url: req.url, routes: getRoutes()});
   });
   
-  (await db.initAllDB(aReS,db.exportDBQueryAsRESTService,true)).forEach((dbi) => {
-    if(dbi.restRouter && Array.isArray(dbi.restRouter))dbi.restRouter.forEach((r) => r(aReS.server));
+  (await datasources.initAllDatasources(aReS,datasources.exportDatasourceQueryAsRESTService,true)).forEach((datasource) => {
+    if(datasource.restRouter && Array.isArray(datasource.restRouter))datasource.restRouter.forEach((r) => r(aReS.server));
   });
   aReS.server.listen(port, () => {
       console.log("Server running at http://localhost:" + port + "/");
