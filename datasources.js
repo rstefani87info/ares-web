@@ -2,17 +2,15 @@
  * @author Roberto Stefani
  * @license MIT
  */
-import permissions from '@ares/core/permissions.js';
-import dbCore from '@ares/core/db.js';
+import datasourcesCore from '@ares/core/datasources.js';
 import { asyncConsole } from '@ares/core/console.js';
-import httpUtility from './http.js';
-import { uxFilePathRegex } from '@ares/core/regex.js';
-export const dbMap = {};
+import httpUtility from '@ares/web/http.js';
+export const datasourceMap = {};
 
 /**
  * @param {Object} mapper - The request mapper object
  * @param {Object} aReS - The aReS context
- * @param {Object} db - The database definition
+ * @param {Object} datasource - The database definition
  * @return {Object} The exported database
  * 
  * @desc {en} Export a database as a REST API by mapper definition
@@ -26,33 +24,27 @@ export const dbMap = {};
  * @desc {ja} データベースを REST API にエクスポートするマップデータを定義する
  * 
  */
-export function exportDBQueryAsRESTService(aReS, querySetting, db) {
-	asyncConsole.log('db', ' - exportDBQueryAsRESTService: { ' );
-	asyncConsole.log('db',  ' - - function: ' + db.name + '.' + querySetting.name);
-	if (!querySetting.mappers) return null;
-	for (const mapper of querySetting.mappers) {
-		asyncConsole.log('db', ' - - REST: {' + (mapper.name || mapperCase) + ':  ' +mapper.path);
-		aReS.exportRoute(db.name + '.' + querySetting.name + '.' + mapper.name, mapper, (req, res) => {
-			db[querySetting.name][mapper.name].execute(
-				req,
-				(queryResponse) => {
-					if (queryResponse.error)
-						httpUtility.sendError403(req, res, queryResponse.error);
-					else res.json(queryResponse);
-				},
-			);
-		})
-		asyncConsole.log('db',' - - }');
-	}
-	asyncConsole.log('db',' - }');
+export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
+	asyncConsole.log('datasources', ' - open REST: {' + (mapper.name ) + ':  ' +mapper.path);
+	aReS.exportRoute(datasource.name + '.' + mapper.querySetting.name + '.' + mapper.name, mapper, (req, res) => {
+		mapper.execute(
+			req,
+			(queryResponse) => {
+				if (queryResponse.error)
+					httpUtility.sendError403(req, res, queryResponse.error);
+				else res.json(queryResponse);
+			},
+		);
+	});
+	asyncConsole.log('datasources',' - }');
 }
 
 /**
  * @param {Object} aReS - The aReS context
- * @param {Object} dbList - The database list
+ * @param {Object} datasourceList - The database list
  * @return {array} The exported database
  * 
- * @desc {en} Inject all routes for DB REST API
+ * @desc {en} Inject all routes for Datasource REST API
  * @desc {it} Inserisce tutte le rotte per l'API REST
  * @desc {es} Inyectar todas las rutas para la API REST
  * @desc {pt} Injetar todas as rotas para a API REST 
@@ -60,14 +52,14 @@ export function exportDBQueryAsRESTService(aReS, querySetting, db) {
  * @desc {de} Alle Routen für die REST API einbetten 
  * @desc {ru} Внедите все маршруты для REST API 
  * @desc {zh} 注入所有数据库 REST API 的路由 
- * @desc {ja} DB REST API のルーティングをすべてインジェクト 
+ * @desc {ja} Datasource REST API のルーティングをすべてインジェクト 
  * 
  */
-export function loadAllDBRoutes(aReS, dbList) {
-	aReS.server.use('/db', router);
+export function loadAllDatasourceRoutes(aReS, datasourceList) {
+	aReS.server.use('/datasource', router);
 }
 
 
-dbCore.exportDBQueryAsRESTService = exportDBQueryAsRESTService;
-dbCore.loadAllDBRoutes = loadAllDBRoutes;
-export default dbCore;
+datasourcesCore.exportDatasourceQueryAsRESTService = exportDatasourceQueryAsRESTService;
+datasourcesCore.loadAllDatasourceRoutes = loadAllDatasourceRoutes;
+export default datasourcesCore;
