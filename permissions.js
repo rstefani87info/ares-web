@@ -6,11 +6,11 @@
  * @desc {it} Controlla se il riferimento è consentito in base ai parametri forniti.
  * @desc {es} Comprueba si el recurso esiste en base a los parametros proporcionados.
  * @desc {fr} Vérifie si la ressource est autorisée en fonction des paramètres fournis.
- * @desc {de} Überprüft, ob die Ressource zulässig ist, basierend auf den angegebenen Parametern.
+
  * @desc {pt} Verifica se o recurso é permitido baseado em parâmetros fornecidos.
- * @desc {zh} 检查指定参数是否允许访问资源
- * @desc {ru} Проверяет, разрешено ли ресурс в зависимости от параметров
- * @desc {ja} 指定されたパラメータを基にリソースを許可するかを確認
+
+
+
  *
  * @param {string} id - The ID of the resource
  * @param {string} [host=null] - The host of the resource (optional)
@@ -44,11 +44,11 @@ export function isResourceAllowed(
  * @desc {it} Funzione per ottenere le autorizzazioni filtrate in base al host, l'ID utente e l'user agent.
  * @desc {es} Función para obtener las autorizaciones filtradas en base al host, el ID de usuario y el agente de usuario.
  * @desc {fr} Fonction pour obtenir les autorisations filtrées en fonction de l'host, de l'ID d'utilisateur et de l'user agent.
- * @desc {de} Funktion für die gefilterten Berechtigungen basierend auf host, userId und userAgent.
+
  * @desc {pt} Função para obter as permissoes filtradas baseado em host, userId e userAgent.
- * @desc {zh} 获取基于host，userId和userAgent的过滤权限
- * @desc {ru} Функция для получения отфильтрованных разрешений на основе host, userId и userAgent
- * @desc {ja} host、userIdとuserAgentに基づくフィルタリングされた許可を取得
+
+
+
  * 
  * @param {string} host - The host for which permissions are being filtered
  * @param {string} userId - The user ID for which permissions are being filtered
@@ -81,11 +81,11 @@ export function getPermission(host, userId, userAgent) {
 * @desc {it} Funzione per gestire la fallimento della autorizzazione inviando una risposta di errore con un codice di stato 403 e un messaggio "Permesso negato".
 * @desc {es} Función para manejar la fallida de la autorización enviando una respuesta de error con un código de estado 403 y un mensaje "Permiso denegado".
 * @desc {fr} Fonction pour traiter la permission en erreur en envoyant une reponse d'erreur avec un code de statut 403 et un message "Permission refuse".
-* @desc {de} Funktion für die Autorisierung fehlerhaft zu verarbeiten, indem eine Fehlerantwort mit einem Statuscode 403 und einem Nachrichten "Zugriff verweigert" gesendet wird.
+
 * @desc {pt} Função para tratar a falha da autorização enviando uma resposta de erro com um código de estado 403 e uma mensagem "Permissão negada".
-* @desc {zh} 处理权限失败的函数，发送一个 403 状态码和 "权限拒绝" 消息的错误响应
-* @desc {ja} 権限失敗を処理するための関数、403 ステータスコードと "権限拒否" メッセージのエラーレスポンスを送信
-* @desc {ru} Функция для обработки ошибки разрешения, отправляющая сообщение об ошибке с кодом состояния 403
+
+
+
 * 
 * @param {type} id - The ID parameter for the function
 * @param {type} req - The request object

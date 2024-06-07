@@ -11,7 +11,6 @@ import appSetup from '../../../app.js';
 import httpUtility from './http.js';
 import jwt from './jwt.js';
 import datasources from "@ares/web/datasources.js";
-import { cloneWithMethods } from "@ares/core/objects.js";
 
 /**
  * 
@@ -20,11 +19,11 @@ import { cloneWithMethods } from "@ares/core/objects.js";
  * @desc {en} Get all routes
  * @desc {it} Ottieni tutte le rotte
  * @desc {es} Obtiene todas las rutas
- * @desc {de} Holen Sie alle Routen
- * @desc {ru} Получить все маршруты
+
+
  * @desc {pt} Obtenha todas as rotas
- * @desc {zh} 获取所有路由
- * @desc {ja} 全てのルーティングを取得
+
+
  * 
  */
 export function getRoutes() {
@@ -45,11 +44,11 @@ aReS.getRoutes=getRoutes;
  * @desc {en} Initialize web express with all routes
  * @desc {it} Inizializza web express con tutte le rotte
  * @desc {es} Inicializa web express con todas las rutas
- * @desc {de} Initialisiere web express mit allen Routen
- * @desc {ru} Инициализирует web express с всеми маршрутами
+
+
  * @desc {pt} Inicializa web express com todas as rotas
- * @desc {zh} 初始化 web express 以及所有路由
- * @desc {ja} web express を初期化し、全てのルーティングを実行
+
+
  */
 async function aReSWebInit (port=3000) {
   aReS.port=port;
@@ -106,6 +105,7 @@ async function aReSWebInit (port=3000) {
   (await datasources.initAllDatasources(aReS,datasources.exportDatasourceQueryAsRESTService,true)).forEach((datasource) => {
     if(datasource.restRouter && Array.isArray(datasource.restRouter))datasource.restRouter.forEach((r) => r(aReS.server));
   });
+  
   aReS.server.listen(port, () => {
       console.log("Server running at http://localhost:" + port + "/");
   });
@@ -123,10 +123,10 @@ export default aReSWebInit;
  * @desc {es} Comprueba si la url corresponde a la producción
  * @desc {pt} Verifica se l'url corrisponde alla produzione
  * @desc {fr} Vérifier si l'url correspond a l'environnement de production
- * @desc {de} Überprüfe, ob die URL zu der Produktionsumgebung passt
- * @desc {ja} プロダクション環境と一致するか確認
- * @desc {zh} 检查 URL 是否与生产环境匹配
- * @desc {ru} Проверьте, соответствует ли URL продуктивной среде
+
+
+
+
  *
  * */
 export function isProduction(url) {

@@ -18,10 +18,6 @@ export const datasourceMap = {};
  * @desc {es} Exportar una base de datos como API REST por la definición de mapeador
  * @desc {pt} Exportar uma base de dados como API REST por definição do mapeador
  * @desc {fr} Exporter une base de données comme API REST par la définition du mappeur
- * @desc {de} Datenbank exportieren als REST API durch Definition der Mapper
- * @desc {ru} Экспортирует базу данных как API REST по определению маппера
- * @desc {zh} 将数据库导出为 REST API 通过映射定义
- * @desc {ja} データベースを REST API にエクスポートするマップデータを定義する
  * 
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
@@ -49,10 +45,6 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
  * @desc {es} Inyectar todas las rutas para la API REST
  * @desc {pt} Injetar todas as rotas para a API REST 
  * @desc {fr} Insérer toutes les routes pour l'API REST 
- * @desc {de} Alle Routen für die REST API einbetten 
- * @desc {ru} Внедите все маршруты для REST API 
- * @desc {zh} 注入所有数据库 REST API 的路由 
- * @desc {ja} Datasource REST API のルーティングをすべてインジェクト 
  * 
  */
 export function loadAllDatasourceRoutes(aReS, datasourceList) {
