@@ -1,4 +1,4 @@
-import * as filesUtility from '@ares/core/files.js';
+import * as filesUtility from '@ares/files';
 /**
  * @prototype {string} 
  */
@@ -151,6 +151,7 @@ const http = {
 	getDomainName: getDomainName,
 	getAllParamsByMethod: getAllParamsByMethod,
 	getAllParams: getAllParams,
+	toQueryString: toQueryString
 }
 	;
 export default http;
