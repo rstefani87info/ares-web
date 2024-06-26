@@ -113,6 +113,22 @@ export function getAllParams(req) {
 	const post = getAllParamsByMethod(req);
 	return { ...get, ...post, ...req.params };
 }
+/**
+ * @desc {en} Convert object to query string
+ * @desc {it} Converte un oggetto in un query string
+ * @desc {es} Convierte un objeto en un query string
+ * @desc {fr} Convertit un objet en un query string
+ * @desc {pt} Converte um objeto em uma string de query
+ * @param {*} params 
+ * @returns 
+ * 
+ * @prototype {Object}
+ */
+export function toQueryString(this_params) {
+	return Object.keys(this_params)
+		.map(key => encodeURIComponent(key) + '=' + encodeURIComponent(this_params[key]??''))
+		.join('&');
+}
 const http = {
 	sendError100: sendError100,
 	sendError200: sendError200,
@@ -135,8 +151,6 @@ const http = {
 	getDomainName: getDomainName,
 	getAllParamsByMethod: getAllParamsByMethod,
 	getAllParams: getAllParams,
-
-
 }
 	;
 export default http;
