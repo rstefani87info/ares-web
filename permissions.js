@@ -2,12 +2,7 @@
  import httpUtility from "./http.js";
 
 /**
- * @desc {en} Check if the resource is allowed based on the provided parameters.
- * @desc {it} Controlla se il riferimento è consentito in base ai parametri forniti.
- * @desc {es} Comprueba si el recurso esiste en base a los parametros proporcionados.
- * @desc {fr} Vérifie si la ressource est autorisée en fonction des paramètres fournis.
-
- * @desc {pt} Verifica se o recurso é permitido baseado em parâmetros fornecidos.
+ * Check if the resource is allowed based on the provided parameters.
 
 
 
@@ -40,12 +35,7 @@ export function isResourceAllowed(
 }
 
 /**
- * @desc {en} Function to get filtered permissions based on host, userId, and userAgent.
- * @desc {it} Funzione per ottenere le autorizzazioni filtrate in base al host, l'ID utente e l'user agent.
- * @desc {es} Función para obtener las autorizaciones filtradas en base al host, el ID de usuario y el agente de usuario.
- * @desc {fr} Fonction pour obtenir les autorisations filtrées en fonction de l'host, de l'ID d'utilisateur et de l'user agent.
-
- * @desc {pt} Função para obter as permissoes filtradas baseado em host, userId e userAgent.
+ * Function to get filtered permissions based on host, userId, and userAgent.
 
 
 
@@ -77,12 +67,7 @@ export function getPermission(host, userId, userAgent) {
 }
 
 /**
-* @desc {en} function to handle permission failure by sending an error response with a 403 status code and a message "Permission denied".
-* @desc {it} Funzione per gestire la fallimento della autorizzazione inviando una risposta di errore con un codice di stato 403 e un messaggio "Permesso negato".
-* @desc {es} Función para manejar la fallida de la autorización enviando una respuesta de error con un código de estado 403 y un mensaje "Permiso denegado".
-* @desc {fr} Fonction pour traiter la permission en erreur en envoyant une reponse d'erreur avec un code de statut 403 et un message "Permission refuse".
-
-* @desc {pt} Função para tratar a falha da autorização enviando uma resposta de erro com um código de estado 403 e uma mensagem "Permissão negada".
+* function to handle permission failure by sending an error response with a 403 status code and a message "Permission denied".
 
 
 

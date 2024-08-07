@@ -13,11 +13,7 @@ export const datasourceMap = {};
  * @param {Object} datasource - The database definition
  * @return {Object} The exported database
  * 
- * @desc {en} Export a database as a REST API by mapper definition
- * @desc {it} Esporta una database come REST API tramite la definizione del mappatore
- * @desc {es} Exportar una base de datos como API REST por la definición de mapeador
- * @desc {pt} Exportar uma base de dados como API REST por definição do mapeador
- * @desc {fr} Exporter une base de données comme API REST par la définition du mappeur
+ * Export a database as a REST API by mapper definition
  * 
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
@@ -40,11 +36,7 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
  * @param {Object} datasourceList - The database list
  * @return {array} The exported database
  * 
- * @desc {en} Inject all routes for Datasource REST API
- * @desc {it} Inserisce tutte le rotte per l'API REST
- * @desc {es} Inyectar todas las rutas para la API REST
- * @desc {pt} Injetar todas as rotas para a API REST 
- * @desc {fr} Insérer toutes les routes pour l'API REST 
+ * Inject all routes for Datasource REST API
  * 
  */
 export function loadAllDatasourceRoutes(aReS, datasourceList) {

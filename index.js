@@ -16,12 +16,7 @@ import datasources from "@ares/web/datasources.js";
  * 
  * @returns {Array}
  * 
- * @desc {en} Get all routes
- * @desc {it} Ottieni tutte le rotte
- * @desc {es} Obtiene todas las rutas
-
-
- * @desc {pt} Obtenha todas as rotas
+ * Get all routes
 
 
  * 
@@ -41,12 +36,7 @@ aReS.getRoutes=getRoutes;
  * 
  * @returns {Object}
  * 
- * @desc {en} Initialize web express with all routes
- * @desc {it} Inizializza web express con tutte le rotte
- * @desc {es} Inicializa web express con todas las rutas
-
-
- * @desc {pt} Inicializa web express com todas as rotas
+ * Initialize web express with all routes
 
 
  */
@@ -118,11 +108,7 @@ export default aReSWebInit;
  * @param {string} url
  * @returns {boolean|{type:string,domain:string}}
  *
- * @desc {en} Check if url corresponds to production environment
- * @desc {it} Verifica se l'url corrisponde alla produzione
- * @desc {es} Comprueba si la url corresponde a la producción
- * @desc {pt} Verifica se l'url corrisponde alla produzione
- * @desc {fr} Vérifier si l'url correspond a l'environnement de production
+ * Check if url corresponds to production environment
 
 
 
