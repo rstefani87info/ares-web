@@ -41,7 +41,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
   aReS.port = port;
   aReS.permissions = permissions;
   aReS.appSetup = appSetup;
-  aReS.permissionData = (await import("./permissionData.json")).default;
+  aReS.permissionData = (await import("../../../permissionData.json")).default;
 
   aReS.server = express();
   aReS.server.use(express.json());
