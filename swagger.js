@@ -3,7 +3,8 @@ import * as files from "@ares/files";
 import fs from "fs";
 import path from "path";
 import unzipper from "unzipper";
-import axios from "axios";
+import {XHRWrapper} from "@ares/core/xhr.js";
+
 
 export async function loadSwaggerSetting(aReS) {
   const setting = { paths: {}, components: {} };
@@ -105,8 +106,8 @@ export async function generate(aReS,
       },
       responseType: "arraybuffer",
     };
-
-    const response = await axios.post(endpoint, requestBody, requestOptions);
+    const xhr = new XHRWrapper (`https://api.swaggerhub.com/apis/${apiUsername}`);
+    const response = xhr.post(endpoint, requestBody, requestOptions,false);
 
     console.log("Code generated successfully. Saving ZIP...");
 
