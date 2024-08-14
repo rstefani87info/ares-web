@@ -2,7 +2,7 @@
  * @author Roberto Stefani
  * @license MIT
  */
-import * as datasourcesCore from '@ares/core/datasources.js';
+export * from '@ares/core/datasources.js';
 import { asyncConsole } from '@ares/core/console.js';
 import httpUtility from '@ares/web/http.js';
 export const datasourceMap = {};
@@ -30,6 +30,3 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	});
 	asyncConsole.log('datasources',' - }');
 }
-
-
-datasourcesCore.exportDatasourceQueryAsRESTService = exportDatasourceQueryAsRESTService;
