@@ -10,7 +10,7 @@ import * as permissions from "./permissions.js";
 import appSetup from "../../../app.js";
 import httpUtility from "./http.js";
 import jwt from "./jwt.js";
-import datasources from "@ares/web/datasources.js";
+import * as datasources from "@ares/web/datasources.js";
 
 /**
  * 
