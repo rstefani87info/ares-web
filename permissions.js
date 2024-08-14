@@ -62,7 +62,6 @@ export function getPermission(host, userId, userAgent) {
 
 /**
 * function to handle permission failure by sending an error response with a 403 status code and a message "Permission denied".
-
 * 
 * @param {type} id - The ID parameter for the function
 * @param {type} req - The request object

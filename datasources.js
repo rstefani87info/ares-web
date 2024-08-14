@@ -32,6 +32,4 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 }
 
 
-
 datasourcesCore.exportDatasourceQueryAsRESTService = exportDatasourceQueryAsRESTService;
-export default datasourcesCore;
