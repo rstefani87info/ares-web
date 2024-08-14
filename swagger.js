@@ -1,4 +1,4 @@
-import datasources from "../core/datasources.js";
+import * as datasources from "./datasources.js";
 import * as files from "@ares/files";
 import fs from "fs";
 import path from "path";
