@@ -102,17 +102,14 @@ async function aReSWebInit(port = 3000, datasourceList) {
   });
 
   aReS.initAllDatasources = async (list) => {
-    
-    for (ds of datasource) {
-      return (
-        await lister(aReS, datasources.exportDatasourceQueryAsRESTService, true)
-      ).map((datasource) => {
-        if (datasource.restRouter && Array.isArray(datasource.restRouter)) {
-          datasource.restRouter.forEach((r) => r(aReS.server));
-          return datasource.name;
-        }
-        return false;
-      });
+    const ret =[];
+    for (ds of list) {
+      const datasource = await loadDatasource(aReS, ds, datasources.exportDatasourceQueryAsRESTService, true);
+      if (datasource.restRouter && Array.isArray(datasource.restRouter)) {
+        datasource.restRouter.forEach((r) => r(aReS.server));
+        ret.push({name:datasource.name, done:true});
+      }
+      else ret.push({name:datasource.name, done:false});
     }
   };
 
