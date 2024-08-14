@@ -1,4 +1,4 @@
-import * as filesUtility from '@ares/files';
+import path from 'path';
 /**
  * @prototype {string} 
  */
@@ -12,7 +12,7 @@ export function getRequestVariables(this_string) {
  */
 export function getRequest(this_string, root, application, ...methods) {
 	methods = normalizeMethodsArray(methods);
-	filesUtility.getRelativePathFrom(this_string, filesUtility.getPath(dbRoot))
+	return path.relative(root, this_string)
 }
 
 /**
@@ -25,9 +25,9 @@ export function getDomainName(this_string) {
 /**
  * @prototype {string} 
  */
-export function getDomainInfo(this_string, callback) {
+export async function getDomainInfo(this_string, callback) {
 	const domain = getDomainName(this_string);
-	const whois = require('whois');
+	const whois = await import('whois');
 	whois.lookup(this_string, (err, data) => {
 		if (err) {
 			throw (err);

@@ -18,7 +18,7 @@ export const datasourceMap = {};
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources', ' - open REST: {' + (mapper.name ) + ':  ' +mapper.path);
-	aReS.exportRoute(datasource.name + '.' + mapper.querySetting.name + '.' + mapper.name, mapper, (req, res) => {
+	aReS.exportRESTRoute(datasource.name + '.' + mapper.querySetting.name + '.' + mapper.name, mapper, (req, res) => {
 		mapper.execute(
 			req,
 			(queryResponse) => {
@@ -31,19 +31,7 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources',' - }');
 }
 
-/**
- * @param {Object} aReS - The aReS context
- * @param {Object} datasourceList - The database list
- * @return {array} The exported database
- * 
- * Inject all routes for Datasource REST API
- * 
- */
-export function loadAllDatasourceRoutes(aReS, datasourceList) {
-	aReS.server.use('/datasource', router);
-}
 
 
 datasourcesCore.exportDatasourceQueryAsRESTService = exportDatasourceQueryAsRESTService;
-datasourcesCore.loadAllDatasourceRoutes = loadAllDatasourceRoutes;
 export default datasourcesCore;

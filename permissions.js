@@ -3,9 +3,6 @@
 
 /**
  * Check if the resource is allowed based on the provided parameters.
-
-
-
  *
  * @param {string} id - The ID of the resource
  * @param {string} [host=null] - The host of the resource (optional)
@@ -36,9 +33,6 @@ export function isResourceAllowed(
 
 /**
  * Function to get filtered permissions based on host, userId, and userAgent.
-
-
-
  * 
  * @param {string} host - The host for which permissions are being filtered
  * @param {string} userId - The user ID for which permissions are being filtered
@@ -68,8 +62,6 @@ export function getPermission(host, userId, userAgent) {
 
 /**
 * function to handle permission failure by sending an error response with a 403 status code and a message "Permission denied".
-
-
 
 * 
 * @param {type} id - The ID parameter for the function
