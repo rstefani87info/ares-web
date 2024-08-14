@@ -103,7 +103,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
   aReS.initAllDatasources = async (list) => {
     const ret =[];
     for (const ds of list) {
-      const datasource = await loadDatasource(aReS, ds, datasources.exportDatasourceQueryAsRESTService, true);
+      const datasource = await datasources.loadDatasource(aReS, ds, datasources.exportDatasourceQueryAsRESTService, true);
       if (datasource.restRouter && Array.isArray(datasource.restRouter)) {
         datasource.restRouter.forEach((r) => r(aReS.server));
         ret.push({name:datasource.name, done:true});
