@@ -2,7 +2,7 @@
  * @author Roberto Stefani
  * @license MIT
  */
-import datasourcesCore from '@ares/core/datasources.js';
+import * as datasourcesCore from '@ares/core/datasources.js';
 import { asyncConsole } from '@ares/core/console.js';
 import httpUtility from '@ares/web/http.js';
 export const datasourceMap = {};
