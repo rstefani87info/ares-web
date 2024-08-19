@@ -18,7 +18,7 @@ export const datasourceMap = {};
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources', ' - open REST: {' + (mapper.name ) + ':  ' +mapper.path);
-	aReS.exportRESTRoute(datasource.name + '.' + mapper.querySetting.name + '.' + mapper.name, mapper, (req, res) => {
+	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, (req, res) => {
 		mapper.execute(
 			req,
 			(queryResponse) => {
