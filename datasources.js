@@ -17,7 +17,7 @@ export const datasourceMap = {};
  * 
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
-	asyncConsole.log('datasources', ' - open REST: {' + (mapper.name ) + ':  ' +mapper.path);
+	asyncConsole.log('datasources', ' - open REST: ' + (mapper.name ) + ':  ' +mapper.path);
 	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, (req, res) => {
 		mapper.execute(
 			req,
@@ -28,5 +28,5 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 			},
 		);
 	});
-	asyncConsole.log('datasources',' - }');
+	asyncConsole.log('datasources',' }');
 }
