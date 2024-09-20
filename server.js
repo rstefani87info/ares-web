@@ -7,7 +7,6 @@ import expressSession from "express-session";
 import cors from "cors";
 import aReS from "@ares/core";
 import * as permissions from "./permissions.js";
-import appSetup from "../../../app.js";
 import httpUtility from "./http.js";
 import jwt from "./jwt.js";
 import * as datasources from "./datasources.js";
@@ -133,9 +132,10 @@ export default aReSWebInit;
  *
  * */
 export function isProduction(url) {
-  return (
+  return appSetup.environments ?
+   (
     appSetup.environments.some(
       (x) => url.toLowerCase().startsWith(x.domain) && x.type === "production"
     )[0] ?? false
-  );
+  ) : aReS.isProduction();
 }
