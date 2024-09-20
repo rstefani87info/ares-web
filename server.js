@@ -10,7 +10,8 @@ import * as permissions from "./permissions.js";
 import appSetup from "../../../app.js";
 import httpUtility from "./http.js";
 import jwt from "./jwt.js";
-import * as datasources from "@ares/web/datasources.js";
+import * as datasources from "./datasources.js";
+import { asyncConsole } from "@ares/core/console.js";
 
 /**
  * 
@@ -53,8 +54,8 @@ async function aReSWebInit(port = 3000, datasourceList) {
         aReS.jwtSensibleRoots.push(mapper);
       }
       for (let method in httpUtility.httpMethods) {
-        method = method.toUpperCase();
-        const methods = new RegExp(mapper.methods, "i");
+        method = method?.toUpperCase() ;
+        const methods = new RegExp(mapper?.methods ?? "GET" , "i");
         if (method.match(methods)) {
           aReS.server[httpUtility.httpMethods[method].expressMethod](
             mapper.path,
@@ -110,6 +111,8 @@ async function aReSWebInit(port = 3000, datasourceList) {
       }
       else ret.push({name:datasource.name, done:false});
     }
+    asyncConsole.output("datasources");
+    return ret;
   };
 
   aReS.initAllDatasources(datasourceList);
