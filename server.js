@@ -40,7 +40,6 @@ aReS.getRoutes = getRoutes;
 async function aReSWebInit(port = 3000, datasourceList) {
   aReS.port = port;
   aReS.permissions = permissions;
-  aReS.appSetup = appSetup;
 
   aReS.server = express();
   aReS.server.use(express.json());
@@ -93,8 +92,8 @@ async function aReSWebInit(port = 3000, datasourceList) {
     if (aReS.pages?.index) res.redirect(aReS.pages.index);
     else
       res.json({
-        application: appSetup.name,
-        env: appSetup.environment,
+        application: aReS.appSetup.name,
+        env: aReS.appSetup.environment,
         url: req.url,
         routes: getRoutes(),
       });
@@ -132,9 +131,9 @@ export default aReSWebInit;
  *
  * */
 export function isProduction(url) {
-  return appSetup.environments ?
+  return aReS.appSetup.environments ?
    (
-    appSetup.environments.some(
+    aReS.appSetup.environments.some(
       (x) => url.toLowerCase().startsWith(x.domain) && x.type === "production"
     )[0] ?? false
   ) : aReS.isProduction();
