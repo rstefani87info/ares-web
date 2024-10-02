@@ -8,7 +8,7 @@ import cors from "cors";
 import aReS from "@ares/core";
 import * as permissions from "./permissions.js";
 import httpUtility from "./http.js";
-import jwt from "./jwt.js";
+// import jwt from "./jwt.js";
 import * as datasources from "./datasources.js";
 import { asyncConsole } from "@ares/core/console.js";
 
@@ -66,7 +66,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
                     req.method.match(new RegExp(m.methods, "i"))
                 )
               ) {
-                jwt.validateJWT(aReS, req, res);
+                aReS.validateJWT(aReS, req, res);
               }
               req.parameters = httpUtility.getAllParamsByMethod(req);
               if (aReS.permissions.isResourceAllowed(id, req)) {
@@ -80,12 +80,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
   };
 
   aReS.server.use(
-    expressSession({
-      secret: aReS.crypto.getMD5Hash(aReS.appSetup.name),
-      resave: false,
-      saveUninitialized: true,
-      cookie: aReS.appSetup.cookie,
-    })
+    expressSession( aReS.appSetup.session)
   );
 
   aReS.server.get("/", (req, res) => {
