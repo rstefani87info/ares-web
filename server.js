@@ -44,13 +44,20 @@ async function aReSWebInit(port = 3000, datasourceList) {
   aReS.server = express();
   aReS.server.use(express.json());
   aReS.server.use(cors());
-  aReS.jwtSensibleRoots = [];
+
+
+  aReS.extractToken = (req, res) => {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      req.token = token;
+    } else {
+      res.status(401).json({ message: 'Unauthorized: invalid token' });
+    }
+  };
 
   aReS.exportRESTRoute = (id, mapper, callback) => {
     if (mapper.path) {
-      if (mapper.isJWTSensible) {
-        aReS.jwtSensibleRoots.push(mapper);
-      }
       for (let method in httpUtility.httpMethods) {
         method = method?.toUpperCase() ;
         const methods = new RegExp(mapper?.methods ?? "GET" , "i");
@@ -59,13 +66,9 @@ async function aReSWebInit(port = 3000, datasourceList) {
             mapper.path,
             (req, res) => {
               if (
-                mapper.isJWTSensible &&
-                aReS.jwtSensibleRoots.some(
-                  (m) =>
-                    m.path === req.url &&
-                    req.method.match(new RegExp(m.methods, "i"))
-                )
+                mapper.isJWTSensible  
               ) {
+                aReS.extractToken(req, res);
                 aReS.validateJWT(aReS, req, res);
               }
               req.parameters = httpUtility.getAllParamsByMethod(req);
@@ -78,6 +81,8 @@ async function aReSWebInit(port = 3000, datasourceList) {
       }
     }
   };
+
+  
 
   aReS.server.use(
     expressSession( aReS.appSetup.session)
