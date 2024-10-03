@@ -71,8 +71,12 @@ async function aReSWebInit(port = 3000, datasourceList) {
                 aReS.extractToken(req, res);
                 aReS.validateJWT(aReS, req, res);
               }
-              req.parameters = httpUtility.getAllParamsByMethod(req);
+              // req.parameters = httpUtility.getAllParamsByMethod(req);
               if (aReS.permissions.isResourceAllowed(id, req)) {
+                if (aReS.appSetup.environment !== "production"){
+                  console.log('Called aReS REST route: ' + mapper.path);
+                  console.log('Request: ' +  req);
+                }
                 callback(req, res);
               }
             }
