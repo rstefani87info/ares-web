@@ -19,10 +19,10 @@ export function isResourceAllowed(
  req,
  stopMode=2
 ) {
-  const method = req.method ? req.method.toUpperCase() : "ALL";
+  // const method = req.method ? req.method.toUpperCase() : "ALL";
   id = id.toLowerCase();
   const host = req.ip;
-  const userId = req.parameters['@userId'];
+  const userId = req?.parameters['@userId'] || '';
   const userAgent = req.headers['user-agent'];
   let filteredPermissions = getPermission(host, userId,userAgent);
   if(stopMode===0) return filteredPermissions.length > 0;
