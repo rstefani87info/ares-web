@@ -1,4 +1,4 @@
- import permissions from "../../../permissionData.json" assert { type: "json" };
+ import permissions from "../../../permissionData.js";
  import httpUtility from "./http.js";
 
 /**
@@ -24,7 +24,7 @@ export function isResourceAllowed(
   const host = req.ip;
   const userId = req.parameters['@userId'];
   const userAgent = req.headers['user-agent'];
-  let filteredPermissions = getPermission(host, req.parameters['@userId'], req.headers['user-agent']);
+  let filteredPermissions = getPermission(host, userId,userAgent);
   if(stopMode===0) return filteredPermissions.length > 0;
   if(stopMode===1 && filteredPermissions.length === 0) throw new Error("Permission denied");
   if(stopMode===2 && filteredPermissions.length === 0) permissionFail(id,req);
