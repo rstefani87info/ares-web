@@ -1,40 +1,57 @@
-import appSetup from '../../../app.js';
-import httpUtility from './http.js';
+import appSetup from "../../../app.js";
+import httpUtility from "./http.js";
 
-export function validateJWT (aReS,req, res){
-    const token = req.headers['authorization'];
-    if (!token) {
-        return httpUtility.sendError401(req,res,'JWT Token not provided');
+export async function validateJWT( req, res, validateFunction) {
+  let token = req.token;
+  if (!token) {
+    try{
+      extractToken(req);
+      token = req.token;
+      if (!token) {
+        httpUtility.sendError401(req, res, "JWT Token not provided");
+        return false;
+      }
+    }catch(e) {
+      httpUtility.sendError401(req, res, e.message);
+      return false;
     }
+  }
 
-    try {
-        const decoded = jwt.verify(token, appSetup.jwtSecret);
-        req.userId = decoded.userId;
-        req.sessionId = decoded.sessionId;
-        const sessionData = req.session[sessionId];
-        if (!sessionData) {
-            return httpUtility.sendError401(req,res,'Session not valid');
-        }
-        req.session[req.sessionId] = sessionData;
-    } catch (error) {
-        return httpUtility.sendError401(req,res,'JWT Token not valid');
-    }
+  try {
+    const notValidCallback = (message)=> httpUtility.sendError401(req, res, "Session not valid"+(message?': '+message:''));
+    if (!validateFunction) {
+      const decoded = jwt.verify(token, appSetup.jwtSecret);
+      req.userId = decoded.userId;
+      req.sessionId = decoded.sessionId;
+      const sessionData = req.session[sessionId];
+      if (!sessionData) {
+        notValidCallback('');
+        return false;
+      }
+      req.session[req.sessionId] = sessionData;
+      return true
+    } else return validateFunction(token, notValidCallback);
+  } catch (error) {
+    httpUtility.sendError401(req, res, "JWT Token not valid");
+    return false;
+  }
 }
 
 export function generateJWT(userId, sessionId) {
-    const payload = {
-      userId: userId,
-      sessionId: sessionId
-    };
-  
-    const secret = appSetup.jwtSecret;
-    const token = jwt.sign(payload, secret);
-    return token;
+  const payload = {
+    userId: userId,
+    sessionId: sessionId,
+  };
+
+  const secret = appSetup.jwtSecret;
+  const token = jwt.sign(payload, secret);
+  return token;
+}
+export function extractToken(req) {
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    req.token = token;
+  }
 }
 
-const jwt = {
-    generateJWT: generateJWT,
-    jwtBaseMiddleware: validateJWT
-};
-
-export default jwt;

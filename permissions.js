@@ -22,7 +22,7 @@ export function isResourceAllowed(
   // const method = req.method ? req.method.toUpperCase() : "ALL";
   id = id.toLowerCase();
   const host = req.ip;
-  const userId = req.parameters? req.parameters['@userId'] : '';
+  const userId = req.session.id;
   const userAgent = req.headers['user-agent'];
   let filteredPermissions = getPermission(host, userId,userAgent);
   if(stopMode===0) return filteredPermissions.length > 0;

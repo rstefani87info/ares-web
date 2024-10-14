@@ -5,7 +5,6 @@
 export * from '@ares/core/datasources.js';
 import { asyncConsole } from '@ares/core/console.js';
 import httpUtility from '@ares/web/http.js';
-export const datasourceMap = {};
 
 /**
  * @param {Object} mapper - The request mapper object
@@ -18,15 +17,16 @@ export const datasourceMap = {};
  */
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources', ' - open REST: ' + (mapper.name ) + ':  ' +mapper.path);
-	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, (req, res) => {
-		mapper.execute(
-			req,
-			(queryResponse) => {
-				if (queryResponse.error)
-					httpUtility.sendError403(req, res, queryResponse.error);
-				else res.json(queryResponse);
-			},
-		);
+	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, async(req, res) => {
+		console.log('calling '+datasource.name + '.' + mapper.name)
+		const result = await mapper.execute( req );
+		if (result["€rror"])
+			httpUtility.sendError403(req, res,result["€rror"]);
+		else {
+			if (mapper.transformToDTO && mapper.transformToDTO instanceof Function)
+			result = mapper.transformToDTO(result);
+			res.json(result);
+		}
 	});
 	asyncConsole.log('datasources',' }');
 }

@@ -8,9 +8,9 @@ import cors from "cors";
 import aReS from "@ares/core";
 import * as permissions from "./permissions.js";
 import httpUtility from "./http.js";
-// import jwt from "./jwt.js";
 import * as datasources from "./datasources.js";
 import { asyncConsole } from "@ares/core/console.js";
+import * as jwt from "./jwt.js";
 
 /**
  * 
@@ -29,6 +29,9 @@ export function getRoutes() {
   return routes;
 }
 aReS.getRoutes = getRoutes;
+aReS.extractToken = (req, res) => {
+  jwt.extractToken(req);
+};
 
 /**
  * @param {number} port
@@ -45,17 +48,6 @@ async function aReSWebInit(port = 3000, datasourceList) {
   aReS.server.use(express.json());
   aReS.server.use(cors());
 
-
-  aReS.extractToken = (req, res) => {
-    const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      req.token = token;
-    } else {
-      res.status(401).json({ message: 'Unauthorized: invalid token' });
-    }
-  };
-
   aReS.exportRESTRoute = (id, mapper, callback) => {
     if (mapper.path) {
       for (let method in httpUtility.httpMethods) {
@@ -64,20 +56,21 @@ async function aReSWebInit(port = 3000, datasourceList) {
         if (method.match(methods)) {
           aReS.server[httpUtility.httpMethods[method].expressMethod](
             mapper.path,
-            (req, res) => {
+            async (req, res) => {
               if (
                 mapper.isJWTSensible  
               ) {
                 aReS.extractToken(req, res);
-                aReS.validateJWT(aReS, req, res);
+                if(! (await aReS.validateJWT(req, res)))return;
               }
               // req.parameters = httpUtility.getAllParamsByMethod(req);
               if (aReS.permissions.isResourceAllowed(id, req)) {
-                if (aReS.appSetup.environment !== "production"){
+                console.log(req.session.id+' can view '+id);
+                if (aReS.isProduction()){
                   console.log('Called aReS REST route: ' + mapper.path);
                   console.log('Request: ' +  req);
                 }
-                callback(req, res);
+                await callback(req, res);
               }
             }
           );
@@ -86,10 +79,46 @@ async function aReSWebInit(port = 3000, datasourceList) {
     }
   };
 
+  const overrideResponse = (req, res, next) => {
+    const originalSend = res.send;
   
+    res.send = function (...args) {
+      console.info('--- Response send called ---');
+      console.info(new Error().stack); 
+      return originalSend.apply(res, args); 
+    };
+  
+    const originalJson = res.json;
+  
+    res.json = function (...args) {
+      console.info('--- Response json called ---');
+      console.info(new Error().stack);
+      return originalJson.apply(res, args);
+    };
+
+    const originalSetHeader = res.setHeader;
+
+    res.setHeader = function (name, value) {
+      console.info(`--- Setting header: ${name} = ${value} ---`);
+      console.info(new Error().stack);
+      return originalSetHeader.apply(res, [name, value]);
+    };
+
+  
+    next();
+  };
+
+  const middlewares = [
+    expressSession( aReS.appSetup.session),
+    
+  ];
+
+  if(aReS.overrideResponse){
+    middlewares.push(overrideResponse);
+  }
 
   aReS.server.use(
-    expressSession( aReS.appSetup.session)
+    ...middlewares
   );
 
   aReS.server.get("/", (req, res) => {
