@@ -19,13 +19,19 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources', ' - open REST: ' + (mapper.name ) + ':  ' +mapper.path);
 	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, async(req, res) => {
 		console.log('calling '+datasource.name + '.' + mapper.name)
-		const result = await mapper.execute( req );
-		if (result["€rror"])
-			httpUtility.sendError403(req, res,result["€rror"]);
-		else {
-			if (mapper.transformToDTO && mapper.transformToDTO instanceof Function)
-			result = mapper.transformToDTO(result);
-			res.json(result);
+		try{
+			const result = await mapper.execute( req );
+			if (result["€rror"])
+				httpUtility.sendError403(req, res,{"@type":"ares-rest-response", "€rror":result["€rror"]});
+			else {
+				result["@type"]="ares-rest-response";
+				console.log('result::',result);
+				res.json(result);
+			}
+		}
+		catch(e){
+			console.error('request error:', e.constructor.name+'::' ,e);
+			httpUtility.sendError403(req, res, e, (e)=>({"@type":"ares-rest-response", "€rror":e}));
 		}
 	});
 	asyncConsole.log('datasources',' }');

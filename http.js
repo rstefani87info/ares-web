@@ -65,23 +65,24 @@ export const httpMethods = {
 	'UNLINK': { expressMethod: 'unlink', httpMethod: 'UNLINK' },
 };
 
-export function sendError(req, res, statusCode, message, error) {
-	res.status(statusCode).json({ message: message, error: error instanceof Error ? error.message+'\n'+error.stack : error });
+export function sendError(req, res, statusCode, message, error, formatter=null) {
+	formatter=formatter ?? ((e,message) => ({ message: message, error: error instanceof Error ? error.message+'\n'+error.stack : error }));
+	res.status(statusCode).json(formatter(error, message, req, statusCode));
 }
-export function sendError100(req, res, error) { sendError(req, res, 100, 'Continue', error); }
-export function sendError200(req, res, error) { sendError(req, res, 200, 'OK', error); }
-export function sendError201(req, res, error) { sendError(req, res, 201, 'Created', error); }
-export function sendError204(req, res, error) { sendError(req, res, 204, 'No Content', error); }
-export function sendError301(req, res, error) { sendError(req, res, 301, 'Moved Permanently', error); }
-export function sendError302(req, res, error) { sendError(req, res, 302, 'Found (or Moved Temporarily)', error); }
-export function sendError304(req, res, error) { sendError(req, res, 304, 'Not Modified', error); }
-export function sendError400(req, res, error) { sendError(req, res, 400, 'Bad Request', error); }
-export function sendError401(req, res, error) { sendError(req, res, 401, 'Unauthorized', error); }
-export function sendError403(req, res, error) { sendError(req, res, 403, 'Forbidden', error); }
-export function sendError404(req, res, error) { sendError(req, res, 404, 'Not Found', error); }
-export function sendError500(req, res, error) { sendError(req, res, 500, 'Internal Server Error', error); }
-export function sendError502(req, res, error) { sendError(req, res, 502, 'Bad Gateway', error); }
-export function sendError503(req, res, error) { sendError(req, res, 503, 'Service Unavailable', error); }
+export function sendError100(req, res, error, formatter) { sendError(req, res, 100, 'Continue', error, formatter); }
+export function sendError200(req, res, error, formatter) { sendError(req, res, 200, 'OK', error, formatter); }
+export function sendError201(req, res, error, formatter) { sendError(req, res, 201, 'Created', error, formatter); }
+export function sendError204(req, res, error, formatter) { sendError(req, res, 204, 'No Content', error, formatter); }
+export function sendError301(req, res, error, formatter) { sendError(req, res, 301, 'Moved Permanently', error, formatter); }
+export function sendError302(req, res, error, formatter) { sendError(req, res, 302, 'Found (or Moved Temporarily)', error, formatter); }
+export function sendError304(req, res, error, formatter) { sendError(req, res, 304, 'Not Modified', error, formatter); }
+export function sendError400(req, res, error, formatter) { sendError(req, res, 400, 'Bad Request', error, formatter); }
+export function sendError401(req, res, error, formatter) { sendError(req, res, 401, 'Unauthorized', error, formatter); }
+export function sendError403(req, res, error, formatter) { sendError(req, res, 403, 'Forbidden', error, formatter); }
+export function sendError404(req, res, error, formatter) { sendError(req, res, 404, 'Not Found', error, formatter); }
+export function sendError500(req, res, error, formatter) { sendError(req, res, 500, 'Internal Server Error', error, formatter); }
+export function sendError502(req, res, error, formatter) { sendError(req, res, 502, 'Bad Gateway', error, formatter); }
+export function sendError503(req, res, error, formatter) { sendError(req, res, 503, 'Service Unavailable', error, formatter); }
 
 export function getAllParamsByMethod(req) {
 	let ret=req.params??{};

@@ -65,8 +65,9 @@ async function aReSWebInit(port = 3000, datasourceList) {
               }
               // req.parameters = httpUtility.getAllParamsByMethod(req);
               if (aReS.permissions.isResourceAllowed(id, req)) {
-                console.log(req.session.id+' can view '+id);
+
                 if (aReS.isProduction()){
+                  console.log('Permission check: ',req.session.id+' can view '+id);
                   console.log('Called aReS REST route: ' + mapper.path);
                   console.log('Request: ' +  req);
                 }
