@@ -16,7 +16,7 @@ export async function loadSwaggerSetting(aReS) {
     )
   ).forEach((datasource) => {
     if (datasource.restRouter && Array.isArray(datasource.restRouter))
-      datasource.restRouter.forEach((r) => r(aReS.server));
+      datasource.restRouter.forEach((r) => r(aReS.httpServer));
   });
   return setting;
 }

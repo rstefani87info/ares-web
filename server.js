@@ -20,7 +20,7 @@ import * as jwt from "./jwt.js";
  * 
  */
 export function getRoutes() {
-  const routes = aReS.server._router.stack
+  const routes = aReS.httpServer._router.stack
     .filter((r) => r.route)
     .map((r) => ({
       method: Object.keys(r.route.methods)[0].toUpperCase(),
@@ -44,9 +44,9 @@ async function aReSWebInit(port = 3000, datasourceList) {
   aReS.port = port;
   aReS.permissions = permissions;
 
-  aReS.server = express();
-  aReS.server.use(express.json());
-  aReS.server.use(cors());
+  aReS.httpServer = express();
+  aReS.httpServer.use(express.json());
+  aReS.httpServer.use(cors());
 
   aReS.exportRESTRoute = (id, mapper, callback) => {
     if (mapper.path) {
@@ -54,7 +54,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
         method = method?.toUpperCase() ;
         const methods = new RegExp(mapper?.methods ?? "GET" , "i");
         if (method.match(methods)) {
-          aReS.server[httpUtility.httpMethods[method].expressMethod](
+          aReS.httpServer[httpUtility.httpMethods[method].expressMethod](
             mapper.path,
             async (req, res) => {
               if (
@@ -118,11 +118,11 @@ async function aReSWebInit(port = 3000, datasourceList) {
     middlewares.push(overrideResponse);
   }
 
-  aReS.server.use(
+  aReS.httpServer.use(
     ...middlewares
   );
 
-  aReS.server.get("/", (req, res) => {
+  aReS.httpServer.get("/", (req, res) => {
     if (aReS.pages?.index) res.redirect(aReS.pages.index);
     else
       res.json({
@@ -138,7 +138,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
     for (const ds of list) {
       const datasource = await datasources.loadDatasource(aReS, ds, datasources.exportDatasourceQueryAsRESTService, true);
       if (datasource.restRouter && Array.isArray(datasource.restRouter)) {
-        datasource.restRouter.forEach((r) => r(aReS.server));
+        datasource.restRouter.forEach((r) => r(aReS.httpServer));
         ret.push({name:datasource.name, done:true});
       }
       else ret.push({name:datasource.name, done:false});
@@ -149,7 +149,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
 
   aReS.initAllDatasources(datasourceList);
 
-  aReS.server.listen(port, () => {
+  aReS.httpServer.listen(port, () => {
     console.log("Server running at http://localhost:" + port + "/");
   });
   return aReS;
