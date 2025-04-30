@@ -26,7 +26,11 @@ export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 			else {
 				result["@type"]="ares-rest-response";
 				console.log('result::',result);
-				res.json(result);
+				res.set('X-Response-Brand', 'aReS');
+				const metadata = {...result};
+				delete metadata.results;
+				res.set('X-aReS-Metadata', JSON.stringify(metadata));
+				res.json(result.results);
 			}
 		}
 		catch(e){
