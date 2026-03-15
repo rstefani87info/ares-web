@@ -1,9 +1,16 @@
- import permissions from "../../../permissionData.js";
  import httpUtility from "./http.js";
+
+
+ export default function aReSInitialize(aReS){
+  aReS.isResourceAllowed = (id, req, stopMode=2) => isResourceAllowed(aReS, id, req, stopMode);
+  aReS.getPermission = (host, userId, userAgent) => getPermission(aReS, host, userId, userAgent);
+}
+
 
 /**
  * Check if the resource is allowed based on the provided parameters.
- *
+ * 
+ * @param {aReS} aReS - The aReS instance
  * @param {string} id - The ID of the resource
  * @param {string} [host=null] - The host of the resource (optional)
  * @param {string} [userId=null] - The user ID (optional)
@@ -15,6 +22,7 @@
  */
 
 export function isResourceAllowed(
+  aReS,
   id,
  req,
  stopMode=2
@@ -24,7 +32,7 @@ export function isResourceAllowed(
   const host = req.ip;
   const userId = req.session.id;
   const userAgent = req.headers['user-agent'];
-  let filteredPermissions = getPermission(host, userId,userAgent);
+  let filteredPermissions = getPermission(aReS,host, userId,userAgent);
   if(stopMode===0) return filteredPermissions.length > 0;
   if(stopMode===1 && filteredPermissions.length === 0) throw new Error("Permission denied");
   if(stopMode===2 && filteredPermissions.length === 0) permissionFail(id,req);
@@ -34,12 +42,14 @@ export function isResourceAllowed(
 /**
  * Function to get filtered permissions based on host, userId, and userAgent.
  * 
+ * @param {aReS} aReS - The aReS instance
  * @param {string} host - The host for which permissions are being filtered
  * @param {string} userId - The user ID for which permissions are being filtered
  * @param {string} userAgent - The user agent for which permissions are being filtered
  * @return {array} The filtered permissions based on the provided parameters
  */
-export function getPermission(host, userId, userAgent) {
+export function getPermission(aReS, host, userId, userAgent) {
+  const permissions = aReS.appSetup?.permissions ?? [];
   userId = (userId ?? "").match(/^\w+$/g) ? userId : "*";
   userAgent = userAgent ? userAgent : "*";
   let filteredPermissions = permissions.filter(
@@ -71,4 +81,3 @@ export function permissionFail(id,req) {
   httpUtility.sendError403(req, req.res, "Permission denied");
 }
 
-export default permissions;

@@ -5,11 +5,10 @@
 import express from "express";
 import expressSession from "express-session";
 import cors from "cors";
-import aReS from "@ares/core";
-import * as permissions from "./permissions.js";
+import { asyncConsole } from "@ares/core/console.js";
+import permissions from "./permissions.js";
 import httpUtility from "./http.js";
 import * as datasources from "./datasources.js";
-import { asyncConsole } from "@ares/core/console.js";
 import * as jwt from "./jwt.js";
 
 /**
@@ -19,7 +18,7 @@ import * as jwt from "./jwt.js";
  * Get all routes
  * 
  */
-export function getRoutes() {
+export function getRoutes(aReS) {
   const routes = aReS.httpServer._router.stack
     .filter((r) => r.route)
     .map((r) => ({
@@ -28,21 +27,16 @@ export function getRoutes() {
     }));
   return routes;
 }
-aReS.getRoutes = getRoutes;
-aReS.extractToken = (req, res) => {
-  jwt.extractToken(req);
-};
 
-/**
- * @param {number} port
- * @param {array} datasources
- * @returns {Object}
- *
- * Initialize web express with all routes
- */
-async function aReSWebInit(port = 3000, datasourceList) {
-  aReS.port = port;
-  aReS.permissions = permissions;
+export async function aReSInitialize(aReS){
+  permissions(aReS);
+  aReS.getRoutes = () => getRoutes(aReS);
+  aReS.extractToken = (req, res) => {
+    jwt.extractToken(req);
+  };
+  const datasourceList = aReS.appSetup?.webDatasources ?? [];
+  const port =aReS.appSetup?.webServerPort ??  3000
+  
 
   aReS.httpServer = express();
   aReS.httpServer.use(express.json());
@@ -50,33 +44,38 @@ async function aReSWebInit(port = 3000, datasourceList) {
 
   aReS.exportRESTRoute = (id, mapper, callback) => {
     if (mapper.path) {
-      for (let method in httpUtility.httpMethods) {
-        method = method?.toUpperCase() ;
+      Object.entries(httpUtility.httpMethods).forEach(([httpMethodKey, httpMethod]) => {
+        const method = httpMethodKey?.toUpperCase() ;
         const methods = new RegExp(mapper?.methods ?? "GET" , "i");
         if (method.match(methods)) {
-          aReS.httpServer[httpUtility.httpMethods[method].expressMethod](
+          aReS.httpServer[httpMethod.expressMethod](
             mapper.path,
             async (req, res) => {
-              if (
-                mapper.isJWTSensible  
-              ) {
-                aReS.extractToken(req, res);
-                if(! (await aReS.validateJWT(req, res)))return;
-              }
-              // req.parameters = httpUtility.getAllParamsByMethod(req);
-              if (aReS.permissions.isResourceAllowed(id, req)) {
-
-                if (aReS.isProduction()){
-                  console.log('Permission check: ',req.session.id+' can view '+id);
-                  console.log('Called aReS REST route: ' + mapper.path);
-                  console.log('Request: ' +  req);
+              try {
+                if (
+                  mapper.isJWTSensible  
+                ) {
+                  aReS.extractToken(req, res);
+                  if(! (await aReS.validateJWT(req, res)))return;
                 }
-                await callback(req, res);
+                if (aReS.isResourceAllowed(id, req, 0)) {
+                  if (aReS.isProduction){
+                    console.log('Permission check: ',req.session?.id+' can view '+id);
+                    console.log('Called aReS REST route: ' + mapper.path);
+                    console.log('Request: ' +  req);
+                  }
+                  await callback(req, res);
+                } else {
+                  httpUtility.sendError403(req, res, "Permission denied");
+                }
+              } catch (e) {
+                console.error('Error executing REST route ' + mapper.path, e);
+                httpUtility.sendError500(req, res, e);
               }
             }
           );
         }
-      }
+      });
     }
   };
 
@@ -114,7 +113,7 @@ async function aReSWebInit(port = 3000, datasourceList) {
     
   ];
 
-  if(aReS.overrideResponse){
+  if(aReS.appSetup?.overrideResponse){
     middlewares.push(overrideResponse);
   }
 
@@ -129,11 +128,11 @@ async function aReSWebInit(port = 3000, datasourceList) {
         application: aReS.appSetup.name,
         env: aReS.appSetup.environment,
         url: req.url,
-        routes: getRoutes(),
+        routes: aReS.getRoutes(),
       });
   });
 
-  aReS.initAllDatasources = async (list) => {
+  aReS.initWebDatasources = async (list) => {
     const ret =[];
     for (const ds of list) {
       const datasource = await datasources.loadDatasource(aReS, ds, datasources.exportDatasourceQueryAsRESTService, true);
@@ -147,14 +146,13 @@ async function aReSWebInit(port = 3000, datasourceList) {
     return ret;
   };
 
-  aReS.initAllDatasources(datasourceList);
+  await aReS.initWebDatasources(datasourceList);
 
   aReS.httpServer.listen(port, () => {
     console.log("Server running at http://localhost:" + port + "/");
   });
-  return aReS;
 }
-export default aReSWebInit;
+ 
 
 /**
  *
@@ -164,11 +162,17 @@ export default aReSWebInit;
  * Check if url corresponds to production environment
  *
  * */
-export function isProduction(url) {
+export function isProduction(aReS,url) {
   return aReS.appSetup.environments ?
    (
     aReS.appSetup.environments.some(
       (x) => url.toLowerCase().startsWith(x.domain) && x.type === "production"
     )[0] ?? false
-  ) : aReS.isProduction();
+  ) : aReS.isProduction;
 }
+
+
+
+
+
+
