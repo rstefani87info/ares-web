@@ -4,7 +4,7 @@
  */
 export * from '@ares/core/datasources.js';
 import { asyncConsole } from '@ares/core/console.js';
-import httpUtility from '@ares/web/http.js';
+import httpUtility from './http.js';
 
 /**
  * @param {Object} mapper - The request mapper object
@@ -18,24 +18,44 @@ import httpUtility from '@ares/web/http.js';
 export function exportDatasourceQueryAsRESTService(aReS, mapper, datasource) {
 	asyncConsole.log('datasources', ' - open REST: ' + (mapper.name ) + ':  ' +mapper.path);
 	aReS.exportRESTRoute(datasource.name + '.' + mapper.name  , mapper, async(req, res) => {
-		console.log('calling '+datasource.name + '.' + mapper.name)
 		try{
+			req.aReS = req.aReS ?? aReS;
+			asyncConsole.log('datasources', `calling ${datasource.name}.${mapper.name}`);
 			const result = await mapper.execute( req );
 			if (result["€rror"])
 				httpUtility.sendError403(req, res,{"@type":"ares-rest-response", "€rror":result["€rror"]});
 			else {
 				result["@type"]="ares-rest-response";
-				console.log('result::',result);
 				res.set('X-Response-Brand', 'aReS');
+				const MAX_METADATA_HEADER_BYTES = 6000;
+				const setAReSMetadataHeader = (value) => {
+					try {
+						const metadataJson = JSON.stringify(value);
+						if (Buffer.byteLength(metadataJson, 'utf8') <= MAX_METADATA_HEADER_BYTES) {
+							res.set('X-aReS-Metadata', metadataJson);
+							return true;
+						}
+					} catch {}
+					return false;
+				};
+
 				const metadata = {...result};
 				delete metadata.results;
-				res.set('X-aReS-Metadata', JSON.stringify(metadata));
+				if (!setAReSMetadataHeader(metadata)) {
+					setAReSMetadataHeader({
+						"@type": "ares-rest-response-metadata",
+						status: result?.status ?? 200,
+						message: result?.message ?? null,
+						url: result?.url ?? null,
+						truncated: true
+					});
+				}
 				res.json(result.results);
 			}
 		}
 		catch(e){
-			console.error('request error:', e.constructor.name+'::' ,e);
-			httpUtility.sendError403(req, res, e, (e)=>({"@type":"ares-rest-response", "€rror":e}));
+			asyncConsole.log('datasources', { message: 'request error', error: e });
+			httpUtility.sendError500(req, res, e, (err)=>({"@type":"ares-rest-response", "€rror": err instanceof Error ? err.message : err}));
 		}
 	});
 	asyncConsole.log('datasources',' }');

@@ -39,16 +39,49 @@ export async function getDomainInfo(this_string, callback) {
 }
 
 export function normalizeMethodsArray(source) {
-	return source.map(x => {
-		if (typeof x == 'string') {
-			if (!Number(x).isNaN()) return httpMethods[parseInt(x)];
-			return x.toLowerCase();
-		}
-		if (typeof x == int) {
-			return httpMethods[x];
-		}
-	}
-	);
+	const values = Array.isArray(source) ? source : [source];
+	const methodOrder = ['ALL', 'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD', 'COPY', 'LINK', 'UNLINK'];
+
+	return values
+		.map(x => {
+			if (x === undefined || x === null) return null;
+
+			if (typeof x === 'number' && Number.isFinite(x)) {
+				const idx = Math.trunc(x);
+				const key = methodOrder[idx];
+				return key ? httpMethods[key].expressMethod : null;
+			}
+
+			if (typeof x === 'string') {
+				const trimmed = x.trim();
+				if (!trimmed) return null;
+
+				const numericCandidate = Number(trimmed);
+				if (Number.isInteger(numericCandidate) && String(numericCandidate) === trimmed) {
+					const key = methodOrder[numericCandidate];
+					return key ? httpMethods[key].expressMethod : null;
+				}
+
+				const upper = trimmed.toUpperCase();
+				if (upper in httpMethods) return httpMethods[upper].expressMethod;
+				return trimmed.toLowerCase();
+			}
+
+			if (typeof x === 'object') {
+				const expressMethod = x.expressMethod;
+				if (typeof expressMethod === 'string' && expressMethod.trim()) return expressMethod.trim().toLowerCase();
+
+				const httpMethod = x.httpMethod;
+				if (typeof httpMethod === 'string' && httpMethod.trim()) {
+					const upper = httpMethod.trim().toUpperCase();
+					if (upper in httpMethods) return httpMethods[upper].expressMethod;
+					return upper.toLowerCase();
+				}
+			}
+
+			return null;
+		})
+		.filter(Boolean);
 }
 
 export const httpMethods = {
@@ -65,8 +98,20 @@ export const httpMethods = {
 	'UNLINK': { expressMethod: 'unlink', httpMethod: 'UNLINK' },
 };
 
+function isDiagnosticsEnabled(req) {
+	const isProduction = Boolean(req?.aReS?.isProduction);
+	return Boolean(
+		req?.aReS?.getLoggingConfig?.()?.diagnostics ??
+		req?.aReS?.getConfig?.('logging.diagnostics', false) ??
+		req?.aReS?.appSetup?.config?.logging?.diagnostics
+	) && !isProduction;
+}
+
 export function sendError(req, res, statusCode, message, error, formatter=null) {
-	formatter=formatter ?? ((e,message) => ({ message: message, error: error instanceof Error ? error.message+'\n'+error.stack : error }));
+	formatter=formatter ?? ((e, message, req) => ({
+		message: message,
+		error: e instanceof Error ? (isDiagnosticsEnabled(req) && e.stack ? `${e.message}\n${e.stack}` : e.message) : e
+	}));
 	res.status(statusCode).json(formatter(error, message, req, statusCode));
 }
 export function sendError100(req, res, error, formatter) { sendError(req, res, 100, 'Continue', error, formatter); }

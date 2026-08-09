@@ -1,84 +1,218 @@
 import * as datasources from "./datasources.js";
-import * as files from "@ares/files";
+import { asyncConsole } from "@ares/core/console.js";
 import fs from "fs";
 import path from "path";
-import unzipper from "unzipper";
-import {XHRWrapper} from "@ares/core/xhr.js";
+import { XHRWrapper } from "@ares/core/xhr.js";
 
+async function loadOptionalModule(name) {
+  try {
+    return await import(name);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    err.message = `Missing optional dependency "${name}" required by @ares/web/swagger: ${err.message}`;
+    throw err;
+  }
+}
 
+/**
+ * Normalize a route path to an OpenAPI-compatible path string.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function normalizeSwaggerPath(value) {
+  const stringValue = String(value ?? "");
+  if (!stringValue) return "/";
+  return stringValue.startsWith("/") ? stringValue : `/${stringValue}`;
+}
+
+/**
+ * Normalize mapper methods into a list of HTTP method tokens.
+ *
+ * @param {string|string[]|undefined|null} value
+ * @returns {string[]}
+ */
+function normalizeHTTPMethods(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry).trim().toUpperCase()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/[,\s]+/g)
+      .map((entry) => entry.trim().toUpperCase())
+      .filter(Boolean);
+  }
+
+  return ["GET"];
+}
+
+/**
+ * Converts a mapper parameter type into an OpenAPI schema $ref when the type
+ * looks like a path/module reference, otherwise returns null.
+ *
+ * @param {string} type
+ * @returns {string|null}
+ */
+function normalizeSchemaTypeToRef(type) {
+  if (typeof type !== "string" || !type.trim()) return null;
+  if (!/[\/\\\.]/.test(type)) return null;
+  const normalized = type
+    .replaceAll("\\", "/")
+    .replaceAll("./", "")
+    .replaceAll(".\\", "")
+    .replaceAll(".js", "");
+  return `#/components/schemas/${normalized}`;
+}
+
+/**
+ * Builds an OpenAPI parameters array from a mapper `parameters` object.
+ *
+ * @param {Record<string, {type?: string, description?: string, required?: boolean}>} mapperParameters
+ * @param {string} pathLevel
+ * @returns {Array<{name: string, in: string, description?: string, required: boolean, schema: object}>}
+ */
+function buildOperationParameters(mapperParameters, pathLevel) {
+  if (!mapperParameters || typeof mapperParameters !== "object") return [];
+  const parameters = [];
+
+  for (const [name, param] of Object.entries(mapperParameters)) {
+    const normalizedName = String(name);
+    const schema = {};
+    const type = param?.type;
+    const ref = normalizeSchemaTypeToRef(type);
+    if (ref) schema["$ref"] = ref;
+    else if (typeof type === "string" && type.trim()) schema.type = type;
+
+    const inValue = pathLevel.includes(`{${normalizedName}}`) ? "path" : "query";
+    parameters.push({
+      name: normalizedName,
+      in: inValue,
+      description: param?.description,
+      required: inValue === "path" ? true : Boolean(param?.required),
+      schema,
+    });
+  }
+
+  return parameters;
+}
+
+/**
+ * Converts a response payload into a Node.js Buffer suitable for `fs.writeFileSync`.
+ *
+ * @param {*} data
+ * @returns {Buffer}
+ */
+function toNodeBuffer(data) {
+  if (!data) return Buffer.alloc(0);
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof ArrayBuffer) return Buffer.from(new Uint8Array(data));
+  if (ArrayBuffer.isView(data)) return Buffer.from(data.buffer);
+  if (typeof data === "string") return Buffer.from(data);
+  return Buffer.from(JSON.stringify(data));
+}
+
+/**
+ * Builds an OpenAPI 3 specification by inspecting the configured `webDatasources`
+ * and their loaded mappers.
+ *
+ * @param {import("@ares/core").ARES} aReS
+ * @returns {Promise<object>}
+ */
 export async function loadSwaggerSetting(aReS) {
-  const setting = { paths: {}, components: {} };
-  (
-    await datasources.initAllDatasources(
-      aReS,
-      datasources.exportDatasourceQueryAsRESTService,
-      true
-    )
-  ).forEach((datasource) => {
-    if (datasource.restRouter && Array.isArray(datasource.restRouter))
-      datasource.restRouter.forEach((r) => r(aReS.httpServer));
-  });
+  const setting = {
+    openapi: "3.0.0",
+    info: {
+      title: aReS?.appSetup?.name ?? "aReS API",
+      version: aReS?.appSetup?.version ?? "1.0.0",
+    },
+    paths: {},
+    components: { schemas: {} },
+  };
+
+  const datasourceList = aReS?.appSetup?.webDatasources ?? [];
+  for (const datasourceSettings of datasourceList) {
+    const datasource = await datasources.loadDatasource(aReS, datasourceSettings, undefined, false);
+    const queryDefinitions = datasource?.queries && typeof datasource.queries === "object"
+      ? Object.values(datasource.queries)
+      : [];
+
+    for (const queryDefinition of queryDefinitions) {
+      const mapperName = queryDefinition?.name;
+      const mapper = mapperName ? datasource?.[mapperName] : null;
+      if (!mapper) continue;
+      exportDatasourceQueryAsSwaggerSetupService(setting, aReS, mapper, datasource);
+    }
+  }
+
   return setting;
 }
 
-export async function saveSwaggerSetting(aReS, path) {
+/**
+ * Persists the generated OpenAPI spec as `swagger.json` under the given output path.
+ *
+ * @param {import("@ares/core").ARES} aReS
+ * @param {string} outputPath
+ * @returns {Promise<boolean>}
+ */
+export async function saveSwaggerSetting(aReS, outputPath) {
   const setting = await loadSwaggerSetting(aReS);
-  files.setFileContent(path + "/swagger.json", JSON.stringify(setting, null, 2));
+  const files = await loadOptionalModule("@ares/files");
+  files.setFileContent(`${outputPath}/swagger.json`, JSON.stringify(setting, null, 2));
   return true;
 }
 
-export function exportDatasourceQueryAsSwaggerSetupService(
-  aReS,
-  mapper,
-  datasource
-) {
-  asyncConsole.log(
-    "datasources",
-    " - open REST: {" + mapper.name + ":  " + mapper.path
-  );
+/**
+ * Enriches an OpenAPI spec by translating a single datasource mapper into one or more
+ * OpenAPI operations under `setting.paths`.
+ *
+ * @param {object} setting
+ * @param {import("@ares/core").ARES} aReS
+ * @param {object} mapper
+ * @param {object} datasource
+ * @returns {void}
+ */
+export function exportDatasourceQueryAsSwaggerSetupService(setting, aReS, mapper, datasource) {
+  asyncConsole.log("datasources", ` - open REST: {${mapper.name}: ${mapper.path}`);
 
-  let pathLevel = mapper.path;
-  if (!pathLevel.startWith("/")) pathLevel = "/" + pathLevel;
+  const pathLevel = normalizeSwaggerPath(mapper.path);
+  const operationId = `${datasource.name}.${mapper?.querySetting?.name ?? "default"}.${mapper.name}`;
+  const parameters = buildOperationParameters(mapper.parameters, pathLevel);
 
-  const pathLevelObject = {
+  const operation = {
     summary: mapper.summary,
     description: mapper.description,
-    operationId:
-      datasource.name + "." + mapper.querySetting.name + "." + mapper.name,
-    parameters: {},
-    responses: mapper.responses,
+    operationId,
+    parameters,
+    responses: mapper.responses ?? {
+      "200": { description: "OK" },
+    },
   };
-  for (const k in mapper.parameters) {
-    pathLevelObject.parameters["-" + k] = {
-      name: k,
-      description: mapper.parameters[k].description,
-      required: mapper[k].required ?? false,
 
-      schema: {},
-    };
-    if (
-      mapper.parameters[k].type.indexOf("/") +
-        mapper.parameters[k].type.indexOf("\\") +
-        mapper.parameters[k].type.indexOf(".") <=
-      -1
-    )
-      pathLevelObject.parameters["-" + k].schema.type =
-        mapper.parameters[k].type;
-    else
-      pathLevelObject.parameters["-" + k].schema["$ref"] =
-        "#components/schemas/" +
-        mapper.parameters[k].type.replaceAll(/\.\\/g, "/");
-    if (pathLevel.indexOf("{" + k + "}"))
-      pathLevelObject.parameters["-" + k].in = "path";
+  setting.paths[pathLevel] = setting.paths[pathLevel] ?? {};
+  for (const method of normalizeHTTPMethods(mapper.methods)) {
+    setting.paths[pathLevel][method.toLowerCase()] = operation;
   }
-  for (const m in mapper.methods) {
-    setting.paths[pathLevel] = setting.paths[pathLevel] || {};
-    setting.paths[pathLevel][m.toLowerCase()] = pathLevelObject;
-  }
+
   asyncConsole.log("datasources", " - }");
 }
 
-export async function generate(aReS,
+/**
+ * Generates a client SDK using SwaggerHub codegen and extracts the resulting ZIP
+ * into the provided output directory.
+ *
+ * @param {import("@ares/core").ARES} aReS
+ * @param {string} language
+ * @param {string} apiUsername
+ * @param {string} apiName
+ * @param {string} apiVersion
+ * @param {string} apiKey
+ * @param {string} packageName
+ * @param {string} outputPath
+ * @returns {Promise<boolean>}
+ */
+export async function generate(
+  aReS,
   language,
   apiUsername,
   apiName,
@@ -88,10 +222,14 @@ export async function generate(aReS,
   outputPath
 ) {
   try {
-    saveSwaggerSetting(aReS, outputPath)
-    const specContent = files.getFileContent(outputPath+"/swagger.json");
+    const unzipperModule = await loadOptionalModule("unzipper");
+    const unzipper = unzipperModule?.default ?? unzipperModule;
 
-    const endpoint = `https://api.swaggerhub.com/apis/${apiUsername}/${apiName}/${apiVersion}/swagger-codegen/clients/${language}`;
+    await saveSwaggerSetting(aReS, outputPath);
+    const files = await loadOptionalModule("@ares/files");
+    const specContent = files.getFileContent(`${outputPath}/swagger.json`);
+
+    const endpointPath = `/apis/${apiUsername}/${apiName}/${apiVersion}/swagger-codegen/clients/${language}`;
     const requestBody = {
       spec: specContent,
       options: {
@@ -99,29 +237,32 @@ export async function generate(aReS,
       },
     };
 
-    const requestOptions = {
+    const xhr = new XHRWrapper("https://api.swaggerhub.com", null, Boolean(aReS?.isProduction));
+    const response = await xhr.post(endpointPath, requestBody, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       responseType: "arraybuffer",
-    };
-    const xhr = new XHRWrapper (`https://api.swaggerhub.com/apis/${apiUsername}`);
-    const response = xhr.post(endpoint, requestBody, requestOptions,false);
+    });
 
-    console.log("Code generated successfully. Saving ZIP...");
+    if (response?.["€rror"] || response?.status >= 400) {
+      throw new Error(response?.message ?? "Swagger generation failed");
+    }
 
     const zipFilePath = path.join(outputPath, "generated_code.zip");
-    fs.writeFileSync(zipFilePath, response.data);
+    fs.writeFileSync(zipFilePath, toNodeBuffer(response?.results));
 
-    console.log("ZIP saved successfully. Decompressing...");
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(zipFilePath)
+        .pipe(unzipper.Extract({ path: outputPath }))
+        .on("close", resolve)
+        .on("error", reject);
+    });
 
-    fs.createReadStream(zipFilePath)
-      .pipe(unzipper.Extract({ path: outputPath }))
-      .on("close", () => {
-        console.log("Decompression complete.");
-      });
+    return true;
   } catch (error) {
     console.error("Error generating code:", error);
+    return false;
   }
 }
