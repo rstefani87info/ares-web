@@ -1,7 +1,7 @@
 import * as datasources from "./datasources.js";
 import { asyncConsole } from "@ares/core/console.js";
-import fs from "fs";
 import path from "path";
+import { setFileContentSync } from "@ares/files";
 import { XHRWrapper } from "@ares/core/xhr.js";
 
 async function loadOptionalModule(name) {
@@ -251,9 +251,10 @@ export async function generate(
     }
 
     const zipFilePath = path.join(outputPath, "generated_code.zip");
-    fs.writeFileSync(zipFilePath, toNodeBuffer(response?.results));
+    setFileContentSync(zipFilePath, toNodeBuffer(response?.results));
 
     await new Promise((resolve, reject) => {
+      const fs = await import("fs");
       fs.createReadStream(zipFilePath)
         .pipe(unzipper.Extract({ path: outputPath }))
         .on("close", resolve)

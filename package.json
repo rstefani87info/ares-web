@@ -70,5 +70,8 @@
     "whois": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "@ares/scd": "workspace:^"
   }
 }

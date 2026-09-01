@@ -14,6 +14,44 @@ import * as jwt from "./jwt.js";
 
 const ROUTE_REGISTRY_KEY = Symbol("aReS.web.routeRegistry");
 
+function resolveHostFromAppSetup(aReS, fallbackHost = "127.0.0.1") {
+  const environments = Array.isArray(aReS?.appSetup?.environments) ? aReS.appSetup.environments : [];
+  const currentEnv = String(aReS?.appSetup?.environment ?? aReS?.appSetup?.env ?? "").trim().toLowerCase();
+
+  const candidate =
+    environments.find((env) => String(env?.type ?? "").trim().toLowerCase() === currentEnv) ??
+    environments.find((env) => String(env?.type ?? "").trim().toLowerCase() === "production") ??
+    null;
+
+  const source = candidate?.domain ?? candidate?.host ?? candidate?.url ?? candidate?.baseUrl;
+  if (!source) return fallbackHost;
+
+  const raw = String(source).trim();
+  if (!raw) return fallbackHost;
+
+  try {
+    const url = raw.includes("://") ? raw : `http://${raw}`;
+    const parsed = new URL(url);
+    return parsed.hostname || fallbackHost;
+  } catch {
+    return raw.split("/")[0].split(":")[0] || fallbackHost;
+  }
+}
+
+/**
+ * Logga l'access point base del server web (dominio + porta).
+ * Utile come utility cross-progetto per sapere dove sta ascoltando l'istanza aReS.
+ */
+export function logWebServerAccessPoint(aReS, overrides = {}) {
+  const port = Number(overrides.port ?? aReS?.appSetup?.webServerPort ?? 3000);
+  const host = String(overrides.host ?? resolveHostFromAppSetup(aReS));
+  const protocol = String(overrides.protocol ?? "http");
+
+  const baseUrl = `${protocol}://${host}:${port}/`;
+  asyncConsole.log("web", { message: "Web server access point", host, port, baseUrl });
+  return { host, port, baseUrl };
+}
+
 function normalizeRoutePath(pathValue) {
   if (typeof pathValue === "string") return pathValue;
   if (pathValue instanceof RegExp) return pathValue.toString();
@@ -359,7 +397,7 @@ export async function aReSInitialize(aReS){
   await aReS.initWebDatasources(datasourceList);
 
   aReS.httpServer.listen(port, () => {
-    console.log("Server running at http://localhost:" + port + "/");
+    console.log(`🚀 Web Server running at http://localhost:${port}/`);
   });
 }
  
